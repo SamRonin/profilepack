@@ -1,11 +1,14 @@
 /**
- * English source dictionary. Every other locale must expose exactly the
- * same keys (enforced by the `Record<MessageKey, string>` type on each
- * dictionary and by tests/i18n.test.ts at runtime).
+ * English dictionary (complementary locale). Must expose exactly the same
+ * keys as the source of truth in fa.ts (Persian is the project's primary
+ * language; the Record<MessageKey, string> type and tests/i18n.test.ts
+ * enforce it).
  *
  * Interpolation: `{name}`-style tokens, replaced by `translate()` params.
  */
-export const en = {
+import type { MessageKey } from './fa';
+
+export const en: Record<MessageKey, string> = {
   // Common
   loading: 'Loading ProfilePack…',
   spinnerLoading: 'Loading…',
@@ -205,5 +208,3 @@ export const en = {
   presetUk: 'UK customer',
   presetJp: 'Japanese customer',
 };
-
-export type MessageKey = keyof typeof en;

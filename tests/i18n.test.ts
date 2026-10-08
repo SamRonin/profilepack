@@ -48,11 +48,15 @@ describe('resolveUiLocale', () => {
     expect(resolveUiLocale('auto', 'fa-IR')).toBe('fa');
   });
 
-  it("resolves 'auto' to en for other or unknown browser languages", () => {
+  it("resolves 'auto' to en only for English browser languages", () => {
     expect(resolveUiLocale('auto', 'en-US')).toBe('en');
     expect(resolveUiLocale('auto', 'en')).toBe('en');
-    expect(resolveUiLocale('auto', 'de-DE')).toBe('en');
-    expect(resolveUiLocale('auto', '')).toBe('en');
+  });
+
+  it("resolves 'auto' to fa for other or unknown languages (Persian-first)", () => {
+    expect(resolveUiLocale('auto', 'de-DE')).toBe('fa');
+    expect(resolveUiLocale('auto', 'tr')).toBe('fa');
+    expect(resolveUiLocale('auto', '')).toBe('fa');
   });
 
   it('an explicit preference always wins', () => {
@@ -62,26 +66,27 @@ describe('resolveUiLocale', () => {
 });
 
 describe('translate', () => {
-  beforeEach(() => setUiLocale('en'));
+  beforeEach(() => setUiLocale('fa'));
 
-  it('returns the en message by default', () => {
-    expect(getUiLocale()).toBe('en');
-    expect(translate('save')).toBe(en.save);
+  it('defaults to fa — Persian is the primary language', () => {
+    expect(getUiLocale()).toBe('fa');
+    expect(translate('save')).toBe(fa.save);
   });
 
-  it('returns the fa message after switching locale', () => {
-    setUiLocale('fa');
-    expect(translate('save')).toBe(fa.save);
-    expect(translate('fillForm', { count: 2 })).toBe(fa.fillForm.replace('{count}', '2'));
+  it('returns the en message after switching locale', () => {
+    setUiLocale('en');
+    expect(getUiLocale()).toBe('en');
+    expect(translate('save')).toBe(en.save);
+    expect(translate('fillForm', { count: 2 })).toBe(en.fillForm.replace('{count}', '2'));
   });
 
   it('interpolates {token} params', () => {
-    expect(translate('fillForm', { count: 3 })).toBe('Fill Form (3)');
-    expect(translate('templateSaved', { name: 'Checkout' })).toBe('Template saved: Checkout');
+    expect(translate('fillForm', { count: 3 })).toBe('پرکردن فرم (3)');
+    expect(translate('templateSaved', { name: 'Checkout' })).toBe('قالب ذخیره شد: Checkout');
   });
 
   it('leaves unknown tokens untouched', () => {
-    expect(translate('fillForm', { other: 'x' })).toBe('Fill Form ({count})');
+    expect(translate('fillForm', { other: 'x' })).toBe('پرکردن فرم ({count})');
   });
 });
 

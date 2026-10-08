@@ -385,8 +385,8 @@ function OptionsApp({ data, reload }: { data: CoreData; reload: () => void }): R
                   onChange={(event) => setUiLanguage(event.target.value)}
                 >
                   <option value="auto">{t('uiLanguageAuto')}</option>
-                  <option value="en">{t('uiLanguageEn')}</option>
                   <option value="fa">{t('uiLanguageFa')}</option>
+                  <option value="en">{t('uiLanguageEn')}</option>
                 </select>
               </label>
               <button

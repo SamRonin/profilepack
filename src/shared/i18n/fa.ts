@@ -1,11 +1,13 @@
 /**
- * Persian (فارسی) dictionary. Must stay key-compatible with en.ts —
- * the Record<MessageKey, string> type and tests/i18n.test.ts enforce it.
+ * Persian (فارسی) dictionary — the project's PRIMARY language and the
+ * source of truth for message keys. Every other locale (en.ts) must
+ * expose exactly the same keys (enforced by the Record<MessageKey, string>
+ * type on each dictionary and by tests/i18n.test.ts at runtime).
  * ZWNJ (U+200C) is used in compound words per Persian typography.
+ *
+ * Interpolation: `{name}`-style tokens, replaced by `translate()` params.
  */
-import type { MessageKey } from './en';
-
-export const fa: Record<MessageKey, string> = {
+export const fa = {
   // Common
   loading: 'در حال بارگذاری ProfilePack…',
   spinnerLoading: 'در حال بارگذاری…',
@@ -206,3 +208,5 @@ export const fa: Record<MessageKey, string> = {
   presetUk: 'مشتری بریتانیایی',
   presetJp: 'مشتری ژاپنی',
 };
+
+export type MessageKey = keyof typeof fa;

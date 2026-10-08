@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet.
 
+## [0.3.0] - 2026-10-08
+
+### Changed
+
+- **Persian (فارسی) is now the project's primary language; English is complementary.**
+  - Manifest metadata falls back to Persian (`default_locale: fa`): browsers running neither English nor Persian now see the Persian name/description/tooltip.
+  - The "Auto" UI language now resolves to Persian for every browser language other than English (previously: English). Explicit English/فارسی choices are unaffected.
+  - `src/shared/i18n/fa.ts` is the source-of-truth dictionary: `MessageKey` derives from it and `en.ts` is type-checked against it.
+  - Static extension pages (`popup`, `sidepanel`, `options`) now ship with `lang="fa" dir="rtl"` as their initial state, and the language switchers list فارسی before English.
+  - The README is now Persian-first: the main `README.md` is in Persian and the English version moved to [README.en.md](README.en.md) (the former `README.fa.md` was merged into `README.md`).
+- Version bumped to 0.3.0 (package.json, manifest.json, `APP_VERSION`).
+
 ## [0.2.0] - 2026-10-08
 
 ### Added
