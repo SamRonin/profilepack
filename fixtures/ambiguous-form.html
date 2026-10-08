@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ambiguous form</title>
+  </head>
+  <body>
+    <!--
+      Deliberately ambiguous fields: the classifier must flag them for
+      review instead of guessing confidently.
+    -->
+    <form id="ambiguous" name="profile_form">
+      <label for="a-name">Company Name</label>
+      <input id="a-name" name="name" type="text" />
+
+      <label for="a-cust-name">Customer Name</label>
+      <input id="a-cust-name" name="customer_name" type="text" />
+
+      <label for="a-cust-id">Customer ID</label>
+      <input id="a-cust-id" name="customer_ref" type="text" />
+
+      <label for="a-reference">Reference</label>
+      <input id="a-reference" name="reference" type="text" />
+
+      <label for="a-detail">Detail</label>
+      <input id="a-detail" name="detail" type="text" />
+
+      <label for="a-confirm-mail">Confirm Email</label>
+      <input id="a-confirm-mail" name="confirm_email" type="text" />
+    </form>
+  </body>
+</html>

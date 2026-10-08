@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>Kundenkonto anlegen</title>
+  </head>
+  <body>
+    <h1>Rechnungsadresse</h1>
+    <form id="rechnung" name="rechnungsformular" action="/checkout" method="post">
+      <label for="k-vorname">Vorname</label>
+      <input id="k-vorname" name="vorname" type="text" autocomplete="given-name" />
+
+      <label for="k-nachname">Nachname</label>
+      <input id="k-nachname" name="nachname" type="text" autocomplete="family-name" />
+
+      <label for="k-email">E-Mail-Adresse</label>
+      <input id="k-email" name="email_adresse" type="email" />
+
+      <label for="k-telefon">Telefonnummer</label>
+      <input id="k-telefon" name="telefonnummer" type="tel" />
+
+      <label for="k-firma">Firmenname</label>
+      <input id="k-firma" name="firmenname" type="text" />
+
+      <label for="k-ustid">USt-IdNr.</label>
+      <input id="k-ustid" name="umsatzsteuer_id" type="text" />
+
+      <label for="k-strasse">Straße und Hausnummer</label>
+      <input id="k-strasse" name="strasse_hausnummer" type="text" />
+
+      <label for="k-plz">PLZ</label>
+      <input id="k-plz" name="plz" type="text" />
+
+      <label for="k-ort">Ort</label>
+      <input id="k-ort" name="ort" type="text" />
+
+      <label for="k-land">Land</label>
+      <select id="k-land" name="land">
+        <option value="">Bitte wählen…</option>
+        <option value="de">Deutschland</option>
+        <option value="at">Österreich</option>
+        <option value="ch">Schweiz</option>
+      </select>
+
+      <label for="k-geburt">Geburtsdatum</label>
+      <input id="k-geburt" name="geburtsdatum" type="date" />
+
+      <label for="k-bemerkung">Anmerkungen</label>
+      <textarea id="k-bemerkung" name="bemerkungen"></textarea>
+
+      <label for="k-passwort">Passwort</label>
+      <input id="k-passwort" name="passwort" type="password" autocomplete="new-password" />
+
+      <button type="submit">Weiter</button>
+    </form>
+  </body>
+</html>

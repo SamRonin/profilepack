@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Basic signup form</title>
+  </head>
+  <body>
+    <h1>Create account</h1>
+    <form id="signup" name="signup_form" action="/signup" method="post">
+      <label for="first_name">First Name</label>
+      <input id="first_name" name="first_name" type="text" autocomplete="given-name" />
+
+      <label for="last_name">Last Name</label>
+      <input id="last_name" name="last_name" type="text" autocomplete="family-name" />
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" />
+
+      <label for="phone">Phone Number</label>
+      <input id="phone" name="phone_number" type="tel" autocomplete="tel" />
+
+      <label for="company">Company</label>
+      <input id="company" name="company" type="text" autocomplete="organization" />
+
+      <label for="zip">ZIP Code</label>
+      <input id="zip" name="billing_zip" type="text" autocomplete="postal-code" />
+
+      <label for="country">Country</label>
+      <select id="country" name="country" autocomplete="country-name">
+        <option value="">Select…</option>
+        <option value="DE">Germany</option>
+        <option value="AT">Austria</option>
+        <option value="CH">Switzerland</option>
+        <option value="US">United States</option>
+        <option value="GB">United Kingdom</option>
+        <option value="JP">Japan</option>
+      </select>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" />
+
+      <button type="submit">Sign up</button>
+    </form>
+  </body>
+</html>

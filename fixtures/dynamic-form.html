@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dynamic form (SPA simulation)</title>
+  </head>
+  <body>
+    <!--
+      Simulates a lazy-rendered form: extra fields are appended by
+      script after load, like a SPA route change or modal would do.
+    -->
+    <form id="dynamic-form" name="dynamic_form">
+      <label for="d-email">Email</label>
+      <input id="d-email" name="email" type="email" />
+    </form>
+
+    <script>
+      window.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+          var form = document.getElementById('dynamic-form');
+          var wrap1 = document.createElement('div');
+          wrap1.innerHTML =
+            '<label for="d-first">First Name</label><input id="d-first" name="first_name" type="text" />';
+          form.appendChild(wrap1);
+          var wrap2 = document.createElement('div');
+          wrap2.innerHTML =
+            '<label for="d-last">Last Name</label><input id="d-last" name="last_name" type="text" />';
+          form.appendChild(wrap2);
+        }, 50);
+      });
+    </script>
+  </body>
+</html>

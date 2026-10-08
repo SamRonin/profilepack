@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>React-style form</title>
+  </head>
+  <body>
+    <!--
+      Mimics a React-rendered form: no <label for>, relies on aria-label,
+      placeholder and autocomplete; fields use camelCase names.
+    -->
+    <div id="root" data-reactroot="">
+      <form data-testid="checkout-form" aria-label="Checkout">
+        <div>
+          <input
+            type="text"
+            name="firstName"
+            autocomplete="given-name"
+            placeholder="Enter your first name"
+            data-testid="firstName-input"
+          />
+        </div>
+        <div>
+          <input
+            type="text"
+            name="lastName"
+            placeholder="Enter your last name"
+            data-testid="lastName-input"
+          />
+        </div>
+        <div>
+          <input type="email" name="emailAddress" autocomplete="email" aria-label="Email address" />
+        </div>
+        <div>
+          <input type="tel" name="phoneNumber" placeholder="Phone" />
+        </div>
+        <div>
+          <input type="text" name="companyName" aria-label="Company name" />
+        </div>
+        <div>
+          <input type="text" name="postalCode" placeholder="ZIP / Postal code" />
+        </div>
+        <div>
+          <input
+            type="text"
+            name="couponCode"
+            placeholder="Coupon code"
+            data-testid="coupon-input"
+          />
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

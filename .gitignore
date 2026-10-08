@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Env / local files
+*.local
+.env
+.env.*
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Caches
+.eslintcache

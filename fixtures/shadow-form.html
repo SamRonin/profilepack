@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Shadow DOM form</title>
+  </head>
+  <body>
+    <!-- Fields rendered inside an OPEN shadow root must be reachable. -->
+    <signup-widget id="host"></signup-widget>
+
+    <script>
+      window.addEventListener('DOMContentLoaded', function () {
+        var host = document.getElementById('host');
+        var shadow = host.attachShadow({ mode: 'open' });
+        shadow.innerHTML = [
+          '<form id="shadow-form">',
+          '<label for="s-first">First Name</label>',
+          '<input id="s-first" name="first_name" type="text" />',
+          '<label for="s-email">Email</label>',
+          '<input id="s-email" name="email" type="email" />',
+          '</form>',
+        ].join('');
+      });
+    </script>
+  </body>
+</html>

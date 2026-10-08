@@ -1,0 +1,67 @@
+{
+  "name": "profilepack",
+  "version": "0.1.0",
+  "description": "Build one synthetic test persona. Reuse it across the web. Local-first form testing for developers and QA.",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "sideEffects": [
+    "*.css"
+  ],
+  "keywords": [
+    "chrome-extension",
+    "browser-extension",
+    "form-filler",
+    "qa",
+    "testing",
+    "synthetic-data",
+    "test-data",
+    "manifest-v3",
+    "developer-tools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamRonin/profilepack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SamRonin/profilepack/issues"
+  },
+  "homepage": "https://github.com/SamRonin/profilepack#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc && vite build && vite build --config vite.content.config.ts && node scripts/prepare-dist.mjs",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "@tailwindcss/vite": "^4.1.4",
+    "@types/chrome": "^0.1.1",
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.4",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.4.1",
+    "eslint": "^9.25.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.5.3",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4"
+  }
+}

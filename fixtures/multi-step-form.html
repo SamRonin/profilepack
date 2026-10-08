@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Multi-step onboarding</title>
+  </head>
+  <body>
+    <!--
+      Wizard-style form: the same persona must survive across steps
+      (only one step visible at a time in real apps).
+    -->
+    <form id="onboarding" name="onboarding_form">
+      <fieldset data-step="1">
+        <legend>Step 1 — About you</legend>
+        <label for="m-first">First Name</label>
+        <input id="m-first" name="first_name" type="text" />
+        <label for="m-last">Last Name</label>
+        <input id="m-last" name="last_name" type="text" />
+        <label for="m-email">Email</label>
+        <input id="m-email" name="email" type="email" />
+      </fieldset>
+
+      <fieldset data-step="2">
+        <legend>Step 2 — Address</legend>
+        <label for="m-street">Street</label>
+        <input id="m-street" name="street" type="text" />
+        <label for="m-city">City</label>
+        <input id="m-city" name="city" type="text" />
+        <label for="m-postal">Postal Code</label>
+        <input id="m-postal" name="postal_code" type="text" />
+        <label for="m-country">Country</label>
+        <select id="m-country" name="country">
+          <option value="">Select…</option>
+          <option value="DEU">Germany</option>
+          <option value="AUT">Austria</option>
+          <option value="USA">United States</option>
+        </select>
+      </fieldset>
+
+      <fieldset data-step="3">
+        <legend>Step 3 — Business details</legend>
+        <label for="m-company">Company</label>
+        <input id="m-company" name="company" type="text" />
+        <label for="m-job">Job Title</label>
+        <input id="m-job" name="job_title" type="text" />
+        <label for="m-dept">Department</label>
+        <input id="m-dept" name="department" type="text" />
+      </fieldset>
+    </form>
+  </body>
+</html>
