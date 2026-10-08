@@ -18,6 +18,8 @@ const required = [
   'src/popup/index.html',
   'src/sidepanel/index.html',
   'src/options/index.html',
+  '_locales/en/messages.json',
+  '_locales/fa/messages.json',
   'icons/icon16.png',
   'icons/icon32.png',
   'icons/icon48.png',

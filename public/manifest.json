@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "ProfilePack",
+  "name": "__MSG_extName__",
   "short_name": "ProfilePack",
-  "version": "0.1.0",
-  "description": "Build one synthetic test persona. Reuse it across the web. Local-first form testing for developers and QA.",
+  "version": "0.2.0",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "minimum_chrome_version": "116",
   "icons": {
     "16": "icons/icon16.png",
@@ -26,7 +27,7 @@
     }
   ],
   "action": {
-    "default_title": "ProfilePack",
+    "default_title": "__MSG_extActionTitle__",
     "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -48,7 +49,7 @@
         "default": "Alt+P",
         "mac": "Alt+P"
       },
-      "description": "Open ProfilePack"
+      "description": "__MSG_extCommandOpen__"
     }
   }
 }

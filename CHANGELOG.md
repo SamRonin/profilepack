@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet.
 
+## [0.2.0] - 2026-10-08
+
+### Added
+
+- Bilingual UI: full English and Persian (فارسی) translations across the popup, side panel, and options page.
+- Right-to-left (RTL) layout support when the UI language is Persian (`dir="rtl"` on the document root).
+- UI language setting (Auto / English / فارسی) in the popup footer and Options; `auto` follows the browser language and is stored in settings.
+- Localized manifest metadata via Chrome `_locales` (`en` + `fa`, `default_locale: en`) for name, description, toolbar tooltip, and keyboard shortcut description.
+- Persian README ([README.fa.md](README.fa.md)) linked from the English README.
+- i18n unit tests: EN/FA dictionary key parity, interpolation-token parity, language resolution, and translation output.
+
+### Fixed
+
+- The "Learn This Form" toggle no longer disappears after entering learn mode; "Cancel learning" is now reachable (the button was previously rendered inside the block that hides the fill button while learning).
+
+### Changed
+
+- Scan limitations are now structured data (`{ kind, count }`) produced by the scanner and localized in the UI at render time, instead of pre-rendered English strings.
+- Version bumped to 0.2.0 (package.json, manifest.json, `APP_VERSION`).
+
 ## [0.1.0] - 2026-10-08
 
 ### Added
@@ -24,5 +44,6 @@ Nothing yet.
 - Keyboard shortcut `Alt+P` to open ProfilePack.
 - Local-only storage: all data stays in `chrome.storage.local` on the user's device.
 
-[Unreleased]: https://github.com/SamRonin/profilepack/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/SamRonin/profilepack/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/SamRonin/profilepack/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/SamRonin/profilepack/releases/tag/v0.1.0

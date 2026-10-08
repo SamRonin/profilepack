@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "ProfilePack",
+    "description": "Extension display name."
+  },
+  "extDescription": {
+    "message": "یک پرسونای آزمایشی بسازید و آن را در کل وب بازاستفاده کنید؛ پرکردن فرم مبتنی بر داده محلی برای توسعه‌دهندگان و QA.",
+    "description": "Extension description shown in chrome://extensions and the Web Store."
+  },
+  "extActionTitle": {
+    "message": "ProfilePack",
+    "description": "Toolbar button tooltip."
+  },
+  "extCommandOpen": {
+    "message": "باز کردن ProfilePack",
+    "description": "Description of the Alt+P keyboard shortcut."
+  }
+}

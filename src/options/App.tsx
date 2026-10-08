@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { PRESET_IDS, PRESETS, type PresetId } from '../domain/generatorData';
+import { PRESET_IDS, type PresetId } from '../domain/generatorData';
 import { generatePersona, randomSeed } from '../domain/generator';
 import type { Persona, PersonaData } from '../domain/persona';
 import type { FormTemplate } from '../domain/template';
@@ -15,7 +15,9 @@ import { updateSettings } from '../services/settingsService';
 import { storage } from '../services/container';
 import { createId } from '../shared/id';
 import { APP_VERSION } from '../shared/version';
-import { useCoreData } from '../ui/hooks';
+import { translate, type MessageKey, type UiLanguagePref } from '../shared/i18n';
+import { I18nProvider, useI18n } from '../shared/i18n/react';
+import { useCoreData, type CoreData } from '../ui/hooks';
 import { EmptyState, LogoMark, SectionCard, StatusBanner } from '../ui/components';
 import { btn, inputCls, labelCls, selectCls } from '../ui/classes';
 
@@ -23,6 +25,13 @@ interface Status {
   kind: 'success' | 'error' | 'info';
   text: string;
 }
+
+const PRESET_MESSAGE_KEYS: Record<PresetId, MessageKey> = {
+  de: 'presetDe',
+  us: 'presetUs',
+  uk: 'presetUk',
+  jp: 'presetJp',
+};
 
 function emptyDraft(): Persona {
   const now = Date.now();
@@ -45,12 +54,28 @@ function emptyDraft(): Persona {
 
 export function App(): React.ReactNode {
   const { data, reload } = useCoreData();
+
+  if (!data) {
+    return <div className="p-8 text-sm text-zinc-400">{translate('loading')}</div>;
+  }
+
+  return (
+    <I18nProvider preferred={data.settings.uiLanguage}>
+      <OptionsApp data={data} reload={reload} />
+    </I18nProvider>
+  );
+}
+
+function OptionsApp({ data, reload }: { data: CoreData; reload: () => void }): React.ReactNode {
+  const { t, locale } = useI18n();
   const [draft, setDraft] = useState<Persona | null>(null);
   const [preset, setPreset] = useState<PresetId>('de');
   const [seed, setSeed] = useState('');
   const [status, setStatus] = useState<Status | null>(null);
 
-  const activeId = data?.settings.activePersonaId;
+  const activeId = data.settings.activePersonaId;
+
+  const presetLabel = (id: PresetId): string => t(PRESET_MESSAGE_KEYS[id]);
 
   const startEdit = (persona: Persona): void => {
     setDraft(structuredClone(persona));
@@ -63,14 +88,21 @@ export function App(): React.ReactNode {
     setDraft(generated);
     setStatus({
       kind: 'info',
-      text: `Generated persona from ${PRESETS[preset].meta.label} (seed: ${parsedSeed}). Review and save.`,
+      text: t('generatedFromPreset', {
+        preset: presetLabel(preset),
+        seed: parsedSeed,
+      }),
     });
+  };
+
+  const setUiLanguage = (value: string): void => {
+    void updateSettings(storage, { uiLanguage: value as UiLanguagePref }).then(reload);
   };
 
   const handleSaveDraft = async (): Promise<void> => {
     if (!draft) return;
     if (!draft.data.identity.firstName.trim() || !draft.data.identity.lastName.trim()) {
-      setStatus({ kind: 'error', text: 'First name and last name are required.' });
+      setStatus({ kind: 'error', text: t('nameRequired') });
       return;
     }
     const persona: Persona = {
@@ -87,11 +119,10 @@ export function App(): React.ReactNode {
     await savePersona(storage, persona);
     setDraft(null);
     reload();
-    setStatus({ kind: 'success', text: `Persona saved: ${persona.name}` });
+    setStatus({ kind: 'success', text: t('personaSaved', { name: persona.name }) });
   };
 
   const handleExport = (): void => {
-    if (!data) return;
     const payload = {
       kind: 'profilepack-export',
       version: 1,
@@ -117,7 +148,7 @@ export function App(): React.ReactNode {
         personas?: Persona[];
       };
       if (parsed.kind !== 'profilepack-export' || !Array.isArray(parsed.personas)) {
-        setStatus({ kind: 'error', text: 'Not a ProfilePack export file.' });
+        setStatus({ kind: 'error', text: t('notExportFile') });
         return;
       }
       for (const persona of parsed.personas) {
@@ -126,18 +157,14 @@ export function App(): React.ReactNode {
         await storage.savePersona({ ...persona, updatedAt: Date.now() });
       }
       reload();
-      setStatus({ kind: 'success', text: `Imported ${parsed.personas.length} persona(s).` });
+      setStatus({ kind: 'success', text: t('importedCount', { count: parsed.personas.length }) });
     } catch (error) {
       setStatus({
         kind: 'error',
-        text: `Import failed: ${error instanceof Error ? error.message : String(error)}`,
+        text: t('importFailed', { error: error instanceof Error ? error.message : String(error) }),
       });
     }
   };
-
-  if (!data) {
-    return <div className="p-8 text-sm text-zinc-400">Loading ProfilePack…</div>;
-  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -145,7 +172,7 @@ export function App(): React.ReactNode {
         <LogoMark size={28} />
         <div className="flex-1">
           <h1 className="text-lg font-semibold text-zinc-100">ProfilePack</h1>
-          <p className="text-xs text-zinc-500">v{APP_VERSION} · local-first · MIT licensed</p>
+          <p className="text-xs text-zinc-500">{t('optionsTagline', { version: APP_VERSION })}</p>
         </div>
       </header>
 
@@ -157,17 +184,13 @@ export function App(): React.ReactNode {
 
       <div className="flex flex-col gap-4">
         <SectionCard
-          title="Generate a persona"
-          action={
-            <span className="text-[11px] text-zinc-500">
-              All data is synthetic · emails use example.test
-            </span>
-          }
+          title={t('generateSection')}
+          action={<span className="text-[11px] text-zinc-500">{t('syntheticNote')}</span>}
         >
           <div className="flex flex-wrap items-end gap-3">
             <div>
               <label className={labelCls} htmlFor="preset-select">
-                Preset
+                {t('presetLabel')}
               </label>
               <select
                 id="preset-select"
@@ -177,25 +200,25 @@ export function App(): React.ReactNode {
               >
                 {PRESET_IDS.map((id) => (
                   <option key={id} value={id}>
-                    {PRESETS[id].meta.label}
+                    {presetLabel(id)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
               <label className={labelCls} htmlFor="seed-input">
-                Seed (optional)
+                {t('seedLabel')}
               </label>
               <input
                 id="seed-input"
                 className={`${inputCls} w-40`}
-                placeholder="e.g. 42"
+                placeholder={t('seedPlaceholder')}
                 value={seed}
                 onChange={(event) => setSeed(event.target.value)}
               />
             </div>
             <button type="button" className={btn.primary} onClick={startGenerate}>
-              Generate
+              {t('generate')}
             </button>
             <button
               type="button"
@@ -205,12 +228,10 @@ export function App(): React.ReactNode {
                 setStatus(null);
               }}
             >
-              New blank persona
+              {t('newBlankPersona')}
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-zinc-500">
-            Same seed + same preset = exactly the same persona. Useful for reproducible test runs.
-          </p>
+          <p className="mt-2 text-[11px] text-zinc-500">{t('deterministicNote')}</p>
         </SectionCard>
 
         {draft ? (
@@ -222,9 +243,9 @@ export function App(): React.ReactNode {
           />
         ) : null}
 
-        <SectionCard title={`Personas (${data.personas.length})`}>
+        <SectionCard title={t('personasCount', { count: data.personas.length })}>
           {data.personas.length === 0 ? (
-            <EmptyState title="No personas yet" hint="Generate one from a preset above." />
+            <EmptyState title={t('noPersonasYet')} hint={t('noPersonasHint')} />
           ) : (
             <ul className="flex flex-col gap-1">
               {data.personas.map((persona) => (
@@ -232,7 +253,7 @@ export function App(): React.ReactNode {
                   key={persona.id}
                   className={`flex flex-wrap items-center gap-2 rounded-md px-2.5 py-2 ${
                     persona.id === activeId
-                      ? 'bg-emerald-950/40 border border-emerald-900'
+                      ? 'border border-emerald-900 bg-emerald-950/40'
                       : 'bg-zinc-900'
                   }`}
                 >
@@ -240,14 +261,16 @@ export function App(): React.ReactNode {
                     <p className="truncate text-sm font-medium text-zinc-100">
                       {persona.name}
                       {persona.id === activeId ? (
-                        <span className="ml-2 rounded bg-emerald-900 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">
-                          ACTIVE
+                        <span className="ms-2 rounded bg-emerald-900 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">
+                          {t('activeBadge')}
                         </span>
                       ) : null}
                     </p>
                     <p className="truncate text-[11px] text-zinc-500">
-                      {persona.locale} · {persona.country} · updated{' '}
-                      {new Date(persona.updatedAt).toLocaleString()}
+                      {persona.locale} · {persona.country} ·{' '}
+                      {t('updatedAt', {
+                        date: new Date(persona.updatedAt).toLocaleString(locale),
+                      })}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-1">
@@ -257,28 +280,29 @@ export function App(): React.ReactNode {
                         className={btn.ghost}
                         onClick={() => void activatePersona(storage, persona.id).then(reload)}
                       >
-                        Activate
+                        {t('activate')}
                       </button>
                     ) : null}
                     <button type="button" className={btn.ghost} onClick={() => startEdit(persona)}>
-                      Edit
+                      {t('edit')}
                     </button>
                     <button
                       type="button"
                       className={btn.ghost}
                       onClick={() => void duplicatePersona(storage, persona.id).then(reload)}
                     >
-                      Duplicate
+                      {t('duplicate')}
                     </button>
                     <button
                       type="button"
                       className={btn.danger}
                       onClick={() => {
-                        if (!window.confirm(`Delete persona "${persona.name}"?`)) return;
+                        if (!window.confirm(t('deletePersonaConfirm', { name: persona.name })))
+                          return;
                         void deletePersona(storage, persona.id).then(reload);
                       }}
                     >
-                      Delete
+                      {t('delete')}
                     </button>
                   </div>
                 </li>
@@ -288,17 +312,14 @@ export function App(): React.ReactNode {
         </SectionCard>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <SectionCard title="Import / Export">
-            <p className="mb-3 text-xs text-zinc-400">
-              Everything stays on this device. Exports are plain JSON files you can commit to test
-              repositories or share with your team.
-            </p>
+          <SectionCard title={t('importExportSection')}>
+            <p className="mb-3 text-xs text-zinc-400">{t('exportNote')}</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className={btn.secondary} onClick={handleExport}>
-                Export JSON
+                {t('exportJson')}
               </button>
               <label className={btn.secondary}>
-                Import JSON
+                {t('importJson')}
                 <input
                   type="file"
                   accept="application/json"
@@ -313,10 +334,10 @@ export function App(): React.ReactNode {
             </div>
           </SectionCard>
 
-          <SectionCard title="Settings">
+          <SectionCard title={t('settingsSection')}>
             <div className="flex flex-col gap-2 text-xs text-zinc-300">
               <label className="flex items-center justify-between gap-2">
-                <span>Scan pages automatically</span>
+                <span>{t('scanAutomatically')}</span>
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-emerald-500"
@@ -327,7 +348,7 @@ export function App(): React.ReactNode {
                 />
               </label>
               <label className="flex items-center justify-between gap-2">
-                <span>Show field count badge</span>
+                <span>{t('showBadge')}</span>
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-emerald-500"
@@ -340,10 +361,10 @@ export function App(): React.ReactNode {
                 />
               </label>
               <label className="flex items-center justify-between gap-2">
-                <span>Fill mode</span>
+                <span>{t('fillMode')}</span>
                 <select
                   className={`${selectCls} w-40`}
-                  aria-label="Fill mode"
+                  aria-label={t('fillMode')}
                   value={data.settings.fillMode}
                   onChange={(event) =>
                     void updateSettings(storage, {
@@ -351,22 +372,35 @@ export function App(): React.ReactNode {
                     }).then(reload)
                   }
                 >
-                  <option value="overwrite">Overwrite</option>
-                  <option value="emptyOnly">Empty fields only</option>
+                  <option value="overwrite">{t('fillModeOverwrite')}</option>
+                  <option value="emptyOnly">{t('fillModeEmptyOnly')}</option>
+                </select>
+              </label>
+              <label className="flex items-center justify-between gap-2">
+                <span>{t('uiLanguageLabel')}</span>
+                <select
+                  className={`${selectCls} w-40`}
+                  aria-label={t('uiLanguageAria')}
+                  value={data.settings.uiLanguage}
+                  onChange={(event) => setUiLanguage(event.target.value)}
+                >
+                  <option value="auto">{t('uiLanguageAuto')}</option>
+                  <option value="en">{t('uiLanguageEn')}</option>
+                  <option value="fa">{t('uiLanguageFa')}</option>
                 </select>
               </label>
               <button
                 type="button"
                 className={`${btn.danger} mt-2`}
                 onClick={() => {
-                  if (!window.confirm('Delete ALL ProfilePack data on this device?')) return;
+                  if (!window.confirm(t('deleteAllConfirm'))) return;
                   void storage.clearAll().then(() => {
                     reload();
-                    setStatus({ kind: 'info', text: 'All local data deleted.' });
+                    setStatus({ kind: 'info', text: t('allDataDeleted') });
                   });
                 }}
               >
-                Delete all data
+                {t('deleteAllData')}
               </button>
             </div>
           </SectionCard>
@@ -377,20 +411,17 @@ export function App(): React.ReactNode {
           onDelete={(id) => void deleteTemplate(storage, id).then(reload)}
         />
 
-        <SectionCard title="About">
+        <SectionCard title={t('aboutSection')}>
           <p className="text-xs leading-relaxed text-zinc-400">
-            ProfilePack is an open-source, local-first Chrome extension for developers and QA
-            engineers. It never submits forms, never fills passwords or payment fields, and never
-            sends persona data anywhere. Keyboard shortcut:{' '}
+            {t('aboutBody')} {t('aboutShortcutPrefix')}{' '}
             <kbd className="rounded bg-zinc-800 px-1">Alt</kbd> +{' '}
-            <kbd className="rounded bg-zinc-800 px-1">P</kbd> (changeable at
-            chrome://extensions/shortcuts).
+            <kbd className="rounded bg-zinc-800 px-1">P</kbd> {t('aboutShortcutSuffix')}
           </p>
         </SectionCard>
       </div>
 
       <footer className="mt-8 border-t border-zinc-800 pt-4 text-center text-[11px] text-zinc-600">
-        ProfilePack v{APP_VERSION} — build one synthetic test persona, reuse it across the web.
+        {t('optionsFooter', { version: APP_VERSION })}
       </footer>
     </div>
   );
@@ -403,10 +434,11 @@ function TemplatesCard({
   templates: FormTemplate[];
   onDelete: (id: string) => void;
 }): React.ReactNode {
+  const { t } = useI18n();
   return (
-    <SectionCard title={`Form templates (${templates.length})`}>
+    <SectionCard title={t('templatesCount', { count: templates.length })}>
       {templates.length === 0 ? (
-        <EmptyState title="No templates yet" hint="Learn a form from the popup to create one." />
+        <EmptyState title={t('noTemplatesYet')} hint={t('noTemplatesHintOptions')} />
       ) : (
         <ul className="flex flex-col gap-1">
           {templates.map((template) => (
@@ -417,13 +449,15 @@ function TemplatesCard({
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-zinc-100">{template.name}</p>
                 <p className="truncate text-[11px] text-zinc-500">
-                  {template.hostname ?? 'any site'}
-                  {template.pathPattern ? ` · path: ${template.pathPattern}` : ''} ·{' '}
-                  {template.mappings.length} mapping(s)
+                  {template.hostname ?? t('anySite')}
+                  {template.pathPattern
+                    ? ` · ${t('pathPattern', { pattern: template.pathPattern })}`
+                    : ''}{' '}
+                  · {t('mappingCount', { count: template.mappings.length })}
                 </p>
               </div>
               <button type="button" className={btn.danger} onClick={() => onDelete(template.id)}>
-                Delete
+                {t('delete')}
               </button>
             </li>
           ))}
@@ -444,6 +478,7 @@ function PersonaEditor({
   onSave: () => void;
   onCancel: () => void;
 }): React.ReactNode {
+  const { t } = useI18n();
   const set = (patch: Partial<Persona>): void => onChange({ ...draft, ...patch });
   const setIdentity = (patch: Partial<PersonaData['identity']>): void =>
     onChange({ ...draft, data: { ...draft.data, identity: { ...draft.data.identity, ...patch } } });
@@ -462,11 +497,11 @@ function PersonaEditor({
   });
 
   return (
-    <SectionCard title={draft.id ? `Edit: ${draft.name}` : 'New persona'}>
+    <SectionCard title={draft.id ? t('editPersona', { name: draft.name }) : t('newPersona')}>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <label className={labelCls} htmlFor="f-first">
-            First name *
+            {t('field.firstName')} *
           </label>
           <input
             id="f-first"
@@ -476,7 +511,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-middle">
-            Middle name
+            {t('field.middleName')}
           </label>
           <input
             id="f-middle"
@@ -486,7 +521,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-last">
-            Last name *
+            {t('field.lastName')} *
           </label>
           <input
             id="f-last"
@@ -496,7 +531,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-full">
-            Full name
+            {t('field.fullName')}
           </label>
           <input
             id="f-full"
@@ -506,7 +541,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-username">
-            Username
+            {t('field.username')}
           </label>
           <input
             id="f-username"
@@ -516,7 +551,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-dob">
-            Date of birth (YYYY-MM-DD)
+            {t('field.dateOfBirth')} (YYYY-MM-DD)
           </label>
           <input
             id="f-dob"
@@ -527,7 +562,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-email">
-            Email
+            {t('field.email')}
           </label>
           <input
             id="f-email"
@@ -538,7 +573,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-phone">
-            Phone
+            {t('field.phone')}
           </label>
           <input
             id="f-phone"
@@ -549,7 +584,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-country">
-            Country
+            {t('field.country')}
           </label>
           <input
             id="f-country"
@@ -559,7 +594,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-state">
-            State / region
+            {t('field.state')}
           </label>
           <input
             id="f-state"
@@ -569,7 +604,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-city">
-            City
+            {t('field.city')}
           </label>
           <input
             id="f-city"
@@ -579,7 +614,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-postal">
-            Postal code
+            {t('field.postalCode')}
           </label>
           <input
             id="f-postal"
@@ -589,7 +624,7 @@ function PersonaEditor({
         </div>
         <div className="sm:col-span-2 lg:col-span-3">
           <label className={labelCls} htmlFor="f-street">
-            Street
+            {t('field.street')}
           </label>
           <input
             id="f-street"
@@ -599,7 +634,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-addr1">
-            Address line 1
+            {t('field.addressLine1')}
           </label>
           <input
             id="f-addr1"
@@ -609,7 +644,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-addr2">
-            Address line 2
+            {t('field.addressLine2')}
           </label>
           <input
             id="f-addr2"
@@ -619,7 +654,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-company">
-            Company
+            {t('field.company')}
           </label>
           <input
             id="f-company"
@@ -629,7 +664,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-job">
-            Job title
+            {t('field.jobTitle')}
           </label>
           <input
             id="f-job"
@@ -639,7 +674,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-dept">
-            Department
+            {t('field.department')}
           </label>
           <input
             id="f-dept"
@@ -649,7 +684,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-vat">
-            VAT ID
+            {t('field.vatId')}
           </label>
           <input
             id="f-vat"
@@ -659,7 +694,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-website">
-            Website
+            {t('field.website')}
           </label>
           <input
             id="f-website"
@@ -669,7 +704,7 @@ function PersonaEditor({
         </div>
         <div>
           <label className={labelCls} htmlFor="f-locale">
-            Locale
+            {t('localeLabel')}
           </label>
           <input
             id="f-locale"
@@ -679,7 +714,7 @@ function PersonaEditor({
         </div>
         <div className="sm:col-span-2 lg:col-span-3">
           <label className={labelCls} htmlFor="f-notes">
-            Notes
+            {t('field.notes')}
           </label>
           <textarea
             id="f-notes"
@@ -691,22 +726,22 @@ function PersonaEditor({
         </div>
         <div className="sm:col-span-2 lg:col-span-3">
           <label className={labelCls} htmlFor="f-name">
-            Persona display name
+            {t('personaDisplayName')}
           </label>
           <input
             id="f-name"
             {...inputProps(draft.name)}
-            placeholder="Defaults to full name"
+            placeholder={t('displayNamePlaceholder')}
             onChange={(e) => set({ name: e.target.value })}
           />
         </div>
       </div>
       <div className="mt-4 flex gap-2">
         <button type="button" className={btn.primary} onClick={onSave}>
-          Save persona
+          {t('savePersona')}
         </button>
         <button type="button" className={btn.secondary} onClick={onCancel}>
-          Cancel
+          {t('cancel')}
         </button>
       </div>
     </SectionCard>

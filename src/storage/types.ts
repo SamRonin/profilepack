@@ -2,6 +2,7 @@ import type { FillMode } from '../domain/messages';
 import type { Persona } from '../domain/persona';
 import type { Scenario } from '../domain/scenario';
 import type { FormTemplate } from '../domain/template';
+import type { UiLanguagePref } from '../shared/i18n';
 
 export interface Settings {
   activePersonaId?: string;
@@ -9,12 +10,15 @@ export interface Settings {
   autoScan: boolean;
   fillMode: FillMode;
   badgeEnabled: boolean;
+  /** Popup/panel UI language. 'auto' follows the browser language. */
+  uiLanguage: UiLanguagePref;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   autoScan: true,
   fillMode: 'overwrite',
   badgeEnabled: true,
+  uiLanguage: 'auto',
 };
 
 export type ActionKind = 'fill' | 'template' | 'persona' | 'scenario';

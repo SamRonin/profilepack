@@ -1,6 +1,12 @@
 import { classifyField } from '../domain/classification/classifier';
 import type { FieldInput } from '../domain/classification/types';
-import type { DetectedField, DetectedTag, FormInfo, ScanResult } from '../domain/scan';
+import type {
+  DetectedField,
+  DetectedTag,
+  FormInfo,
+  ScanLimitation,
+  ScanResult,
+} from '../domain/scan';
 import {
   ariaLabelledByText,
   collectFields,
@@ -43,18 +49,10 @@ function extractFieldInput(el: Element, tag: DetectedTag): FieldInput {
   };
 }
 
-function buildLimitations(closedRoots: number, iframes: number): string[] {
-  const limitations: string[] = [];
-  if (closedRoots > 0) {
-    limitations.push(
-      `${closedRoots} possible closed shadow root(s) detected — fields inside them cannot be reached by any extension.`,
-    );
-  }
-  if (iframes > 0) {
-    limitations.push(
-      `${iframes} iframe(s) detected — cross-origin iframes are intentionally not scanned.`,
-    );
-  }
+function buildLimitations(closedRoots: number, iframes: number): ScanLimitation[] {
+  const limitations: ScanLimitation[] = [];
+  if (closedRoots > 0) limitations.push({ kind: 'closedShadowRoots', count: closedRoots });
+  if (iframes > 0) limitations.push({ kind: 'iframes', count: iframes });
   return limitations;
 }
 

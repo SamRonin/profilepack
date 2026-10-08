@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { applyScenario, activatePersona } from '../services/personaService';
 import { findTemplateForUrl, saveTemplate } from '../services/templateService';
+import { updateSettings } from '../services/settingsService';
 import { storage } from '../services/container';
 import { resolveMappings, type FieldOverride, type ResolvedMapping } from '../domain/resolve';
 import type { Classification } from '../domain/classification/types';
@@ -9,8 +10,10 @@ import type { FillResult } from '../domain/messages';
 import type { ScanResult } from '../domain/scan';
 import { APP_VERSION } from '../shared/version';
 import { isExtensionEnvironment } from '../shared/browserApi';
+import { translate, type UiLanguagePref } from '../shared/i18n';
+import { I18nProvider, useI18n } from '../shared/i18n/react';
 import { getActiveTab, sendToBackground, sendToTab } from '../shared/messaging';
-import { useCoreData, usePageScan } from '../ui/hooks';
+import { useCoreData, usePageScan, type CoreData } from '../ui/hooks';
 import { FieldsPanel } from '../ui/FieldsPanel';
 import { PersonaSelect } from '../ui/PersonaSelect';
 import { LogoMark, StatusBanner } from '../ui/components';
@@ -113,6 +116,21 @@ function previewScan(): ScanResult {
 
 export function App(): React.ReactNode {
   const { data, reload } = useCoreData();
+
+  if (!data) {
+    // Rendered before settings load; translate() uses the browser language.
+    return <div className="p-4 text-sm text-zinc-400">{translate('loading')}</div>;
+  }
+
+  return (
+    <I18nProvider preferred={data.settings.uiLanguage}>
+      <PopupApp data={data} reload={reload} />
+    </I18nProvider>
+  );
+}
+
+function PopupApp({ data, reload }: { data: CoreData; reload: () => void }): React.ReactNode {
+  const { t } = useI18n();
   const scanState = usePageScan(true);
   const [overrides, setOverrides] = useState<Record<string, FieldOverride>>({});
   const [learnMode, setLearnMode] = useState(false);
@@ -124,11 +142,11 @@ export function App(): React.ReactNode {
   const scan: ScanResult = preview ? previewScan() : (scanState.scan as ScanResult);
 
   const activePersona = useMemo(
-    () => data?.personas.find((p) => p.id === data.settings.activePersonaId) ?? null,
+    () => data.personas.find((p) => p.id === data.settings.activePersonaId) ?? null,
     [data],
   );
   const activeScenario = useMemo(
-    () => data?.scenarios.find((s) => s.id === data.settings.activeScenarioId) ?? null,
+    () => data.scenarios.find((s) => s.id === data.settings.activeScenarioId) ?? null,
     [data],
   );
   const effectivePersona = useMemo(
@@ -137,7 +155,7 @@ export function App(): React.ReactNode {
   );
 
   const template = useMemo(
-    () => (scanState.tabUrl ? findTemplateForUrl(data?.templates ?? [], scanState.tabUrl) : null),
+    () => (scanState.tabUrl ? findTemplateForUrl(data.templates, scanState.tabUrl) : null),
     [data, scanState.tabUrl],
   );
 
@@ -155,6 +173,12 @@ export function App(): React.ReactNode {
     });
   };
 
+  const setUiLanguage = (value: string): void => {
+    void updateSettings(storage, { uiLanguage: value as UiLanguagePref }).then(reload);
+  };
+
+  const hostLabel = hostnameOf(scanState.tabUrl) || t('defaultTemplateHost');
+
   const handleFill = async (): Promise<void> => {
     if (!effectivePersona || !scan) return;
     setFillBusy(true);
@@ -163,13 +187,13 @@ export function App(): React.ReactNode {
       if (preview) {
         setStatus({
           kind: 'info',
-          text: `Preview mode: fill simulated for ${resolved.length} field(s). Install the extension for live filling.`,
+          text: t('previewFillSimulated', { count: resolved.length }),
         });
         return;
       }
       const tab = await getActiveTab();
       if (!tab?.id) {
-        setStatus({ kind: 'error', text: 'No active tab.' });
+        setStatus({ kind: 'error', text: t('noActiveTab') });
         return;
       }
       const response = await sendToTab<FillResult[]>(tab.id, {
@@ -184,12 +208,12 @@ export function App(): React.ReactNode {
           })),
           options: {
             locale: activeScenario?.locale ?? effectivePersona.locale,
-            mode: data?.settings.fillMode ?? 'overwrite',
+            mode: data.settings.fillMode,
           },
         },
       });
       if (!response.ok) {
-        setStatus({ kind: 'error', text: `Fill failed: ${response.error}` });
+        setStatus({ kind: 'error', text: t('fillFailed', { error: response.error }) });
         return;
       }
       const results = response.data;
@@ -200,11 +224,16 @@ export function App(): React.ReactNode {
         id: `action_${Date.now()}`,
         at: Date.now(),
         kind: 'fill',
-        summary: `Filled ${filled} field(s) on ${hostnameOf(scanState.tabUrl) || 'page'}`,
+        summary: hostnameOf(scanState.tabUrl)
+          ? t('recentFilledOn', { count: filled, host: hostnameOf(scanState.tabUrl) })
+          : t('recentFilledOnPage', { count: filled }),
       });
       setStatus({
         kind: failed > 0 ? 'info' : 'success',
-        text: `Filled ${filled}, skipped ${skipped}${failed > 0 ? `, failed ${failed}` : ''}.`,
+        text:
+          failed > 0
+            ? t('fillStatusWithFailures', { filled, skipped, failed })
+            : t('fillStatus', { filled, skipped }),
       });
     } finally {
       setFillBusy(false);
@@ -225,7 +254,7 @@ export function App(): React.ReactNode {
             customValue: override.customValue,
           })),
       );
-    const name = templateName.trim() || `Form on ${hostnameOf(scanState.tabUrl) || 'site'}`;
+    const name = templateName.trim() || t('defaultTemplateName', { host: hostLabel });
 
     if (preview) {
       await saveTemplate(storage, {
@@ -234,7 +263,7 @@ export function App(): React.ReactNode {
         hostname: hostnameOf(scanState.tabUrl),
         mappings,
       });
-      setStatus({ kind: 'success', text: `Template saved locally (preview mode): ${name}` });
+      setStatus({ kind: 'success', text: t('templateSavedPreview', { name }) });
       setLearnMode(false);
       setOverrides({});
       return;
@@ -249,18 +278,14 @@ export function App(): React.ReactNode {
       },
     });
     if (!response.ok) {
-      setStatus({ kind: 'error', text: `Saving template failed: ${response.error}` });
+      setStatus({ kind: 'error', text: t('templateSaveFailed', { error: response.error }) });
       return;
     }
-    setStatus({ kind: 'success', text: `Template saved: ${response.data.name}` });
+    setStatus({ kind: 'success', text: t('templateSaved', { name: response.data.name }) });
     setLearnMode(false);
     setOverrides({});
     reload();
   };
-
-  if (!data) {
-    return <div className="p-4 text-sm text-zinc-400">Loading ProfilePack…</div>;
-  }
 
   return (
     <div className="flex min-h-[420px] flex-col">
@@ -272,7 +297,7 @@ export function App(): React.ReactNode {
         </div>
         {preview ? (
           <span className="rounded border border-amber-800 bg-amber-950/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-300">
-            Preview mode
+            {t('previewMode')}
           </span>
         ) : null}
       </header>
@@ -298,15 +323,19 @@ export function App(): React.ReactNode {
                 if (isExtensionEnvironment) chrome.runtime.openOptionsPage();
               }}
               disabled={preview}
-              title={preview ? 'Options are available in the extension' : 'Manage personas'}
+              title={preview ? t('managePreviewHint') : t('manageTitleHint')}
             >
-              Manage
+              {t('manage')}
             </button>
           </div>
           {activeScenario ? (
             <p className="text-[11px] text-zinc-500">
-              Scenario: {activeScenario.name} ({activeScenario.locale}
-              {activeScenario.country ? `, ${activeScenario.country}` : ''})
+              {t('scenarioLine', {
+                name: activeScenario.name,
+                meta: `${activeScenario.locale}${
+                  activeScenario.country ? `, ${activeScenario.country}` : ''
+                }`,
+              })}
             </p>
           ) : null}
         </div>
@@ -319,7 +348,7 @@ export function App(): React.ReactNode {
 
         {scanState.phase === 'loading' ? (
           <p className="py-8 text-center text-sm text-zinc-500" role="status">
-            Scanning page…
+            {t('scanningPage')}
           </p>
         ) : scanState.phase === 'error' ? (
           <StatusBanner kind="error">{scanState.error}</StatusBanner>
@@ -343,7 +372,7 @@ export function App(): React.ReactNode {
                   setStatus(null);
                 }}
               >
-                {learnMode ? 'Cancel learning' : 'Learn This Form'}
+                {learnMode ? t('cancelLearning') : t('learnThisForm')}
               </button>
             }
           />
@@ -355,49 +384,64 @@ export function App(): React.ReactNode {
           <div className="mb-2 flex gap-2">
             <input
               className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none"
-              placeholder={`Template name (Form on ${hostnameOf(scanState.tabUrl) || 'site'})`}
-              aria-label="Template name"
+              placeholder={t('templateNamePlaceholder', { host: hostLabel })}
+              aria-label={t('templateNameAria')}
               value={templateName}
               onChange={(event) => setTemplateName(event.target.value)}
             />
             <button type="button" className={btn.primary} onClick={() => void handleSaveTemplate()}>
-              Save
+              {t('save')}
             </button>
           </div>
         ) : null}
-        <div className="flex items-center justify-between text-[11px] text-zinc-500">
-          <span>Local-first · data never leaves this device</span>
-          <span className="flex gap-2">
-            <button
-              type="button"
-              className="underline hover:text-zinc-300 disabled:opacity-40"
-              disabled={preview}
-              onClick={() => {
-                void (async () => {
-                  try {
-                    const tab = await getActiveTab();
-                    if (tab?.id) await chrome.sidePanel.open({ tabId: tab.id });
-                    window.close();
-                  } catch {
-                    setStatus({
-                      kind: 'error',
-                      text: 'Side panel is unavailable in this Chrome version.',
-                    });
-                  }
-                })();
-              }}
+        <div className="flex flex-col gap-1.5 text-[11px] text-zinc-500">
+          <div className="flex items-center justify-between gap-2">
+            <span className="min-w-0 truncate">{t('privacyNote')}</span>
+            <span className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                className="underline hover:text-zinc-300 disabled:opacity-40"
+                disabled={preview}
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      const tab = await getActiveTab();
+                      if (tab?.id) await chrome.sidePanel.open({ tabId: tab.id });
+                      window.close();
+                    } catch {
+                      setStatus({ kind: 'error', text: t('sidePanelUnavailable') });
+                    }
+                  })();
+                }}
+              >
+                {t('sidePanel')}
+              </button>
+              <button
+                type="button"
+                className="underline hover:text-zinc-300 disabled:opacity-40"
+                disabled={preview}
+                onClick={() => chrome.runtime.openOptionsPage()}
+              >
+                {t('options')}
+              </button>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="popup-ui-language" className="shrink-0">
+              {t('uiLanguageLabel')}
+            </label>
+            <select
+              id="popup-ui-language"
+              className="rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-[11px] text-zinc-300 focus:border-emerald-500 focus:outline-none"
+              aria-label={t('uiLanguageAria')}
+              value={data.settings.uiLanguage}
+              onChange={(event) => setUiLanguage(event.target.value)}
             >
-              Side panel
-            </button>
-            <button
-              type="button"
-              className="underline hover:text-zinc-300 disabled:opacity-40"
-              disabled={preview}
-              onClick={() => chrome.runtime.openOptionsPage()}
-            >
-              Options
-            </button>
-          </span>
+              <option value="auto">{t('uiLanguageAuto')}</option>
+              <option value="en">{t('uiLanguageEn')}</option>
+              <option value="fa">{t('uiLanguageFa')}</option>
+            </select>
+          </div>
         </div>
       </footer>
     </div>

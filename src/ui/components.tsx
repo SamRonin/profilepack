@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
 
+import { useI18n } from '../shared/i18n/react';
 import { cardCls, sectionTitleCls } from './classes';
 
 export function Spinner({ label }: { label?: string }): ReactNode {
+  const { t } = useI18n();
   return (
     <div
       className="flex items-center justify-center gap-2 py-8 text-sm text-zinc-400"
@@ -12,7 +14,7 @@ export function Spinner({ label }: { label?: string }): ReactNode {
         aria-hidden="true"
         className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-600 border-t-emerald-400"
       />
-      {label ?? 'Loading…'}
+      {label ?? t('spinnerLoading')}
     </div>
   );
 }
@@ -80,6 +82,7 @@ export function SectionCard({
 }
 
 export function ConfidenceBadge({ confidence }: { confidence: number }): ReactNode {
+  const { t } = useI18n();
   const pct = Math.round(confidence * 100);
   const cls =
     confidence >= 0.9
@@ -89,7 +92,7 @@ export function ConfidenceBadge({ confidence }: { confidence: number }): ReactNo
         : 'bg-rose-950 text-rose-300 border-rose-800';
   return (
     <span
-      title={`Confidence ${pct}%`}
+      title={t('confidenceTitle', { pct })}
       className={`inline-block rounded border px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${cls}`}
     >
       {pct}%

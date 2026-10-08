@@ -12,6 +12,7 @@ import { listScenarios } from '../services/scenarioService';
 import { listTemplates } from '../services/templateService';
 import { getActiveTab, ensureContentScript, sendToTab } from '../shared/messaging';
 import { isExtensionEnvironment } from '../shared/browserApi';
+import { translate } from '../shared/i18n';
 
 export type ScanPhase = 'loading' | 'ready' | 'error';
 
@@ -52,23 +53,21 @@ export function usePageScan(enabled: boolean): PageScanState {
         if (cancelled) return;
         if (!tab?.id) {
           setPhase('error');
-          setError('No active browser tab found.');
+          setError(translate('noActiveTabFound'));
           return;
         }
         const ensured = await ensureContentScript(tab.id);
         if (cancelled) return;
         if (!ensured.ok) {
           setPhase('error');
-          setError(
-            `ProfilePack cannot run on this page. Reload the page and retry; restricted pages (chrome://, Chrome Web Store, PDF viewer) are not supported. (${ensured.error ?? 'unknown'})`,
-          );
+          setError(translate('pageUnsupported', { error: ensured.error ?? 'unknown' }));
           return;
         }
         const response = await sendToTab<ScanResult>(tab.id, { type: 'SCAN_PAGE' });
         if (cancelled) return;
         if (!response.ok) {
           setPhase('error');
-          setError(`Scan failed: ${response.error}`);
+          setError(translate('scanFailed', { error: response.error }));
           return;
         }
         setScan(response.data);

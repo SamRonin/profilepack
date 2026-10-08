@@ -27,12 +27,20 @@ export interface FormInfo {
   fieldCount: number;
 }
 
+/** Structural page constraints the scanner cannot cross (localized in the UI). */
+export type ScanLimitationKind = 'closedShadowRoots' | 'iframes';
+
+export interface ScanLimitation {
+  kind: ScanLimitationKind;
+  count: number;
+}
+
 export interface ScanResult {
   fields: DetectedField[];
   forms: FormInfo[];
   /** Password/payment/consent fields detected but intentionally skipped. */
   sensitiveSkipped: number;
-  /** Human-readable constraints found on this page. */
-  limitations: string[];
+  /** Structural constraints found on this page — rendered localized. */
+  limitations: ScanLimitation[];
   scannedAt: number;
 }

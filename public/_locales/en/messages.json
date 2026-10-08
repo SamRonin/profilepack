@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "ProfilePack",
+    "description": "Extension display name."
+  },
+  "extDescription": {
+    "message": "Build one synthetic test persona. Reuse it across the web. Local-first form testing for developers and QA.",
+    "description": "Extension description shown in chrome://extensions and the Web Store."
+  },
+  "extActionTitle": {
+    "message": "ProfilePack",
+    "description": "Toolbar button tooltip."
+  },
+  "extCommandOpen": {
+    "message": "Open ProfilePack",
+    "description": "Description of the Alt+P keyboard shortcut."
+  }
+}

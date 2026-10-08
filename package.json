@@ -1,6 +1,6 @@
 {
   "name": "profilepack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Build one synthetic test persona. Reuse it across the web. Local-first form testing for developers and QA.",
   "license": "MIT",
   "type": "module",

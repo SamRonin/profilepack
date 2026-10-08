@@ -5,14 +5,15 @@ import type { FillResult } from '../domain/messages';
 import { resolveMappings, type FieldOverride } from '../domain/resolve';
 import { applyScenario, activatePersona } from '../services/personaService';
 import { saveScenario, activateScenario, deleteScenario } from '../services/scenarioService';
-import { deleteTemplate } from '../services/templateService';
+import { deleteTemplate, findTemplateForUrl } from '../services/templateService';
 import { updateSettings } from '../services/settingsService';
 import { storage } from '../services/container';
-import { findTemplateForUrl } from '../services/templateService';
-import { isExtensionEnvironment } from '../shared/browserApi';
-import { getActiveTab, sendToTab } from '../shared/messaging';
 import { APP_VERSION } from '../shared/version';
-import { useCoreData, usePageScan } from '../ui/hooks';
+import { isExtensionEnvironment } from '../shared/browserApi';
+import { translate, type UiLanguagePref } from '../shared/i18n';
+import { I18nProvider, useI18n } from '../shared/i18n/react';
+import { getActiveTab, sendToTab } from '../shared/messaging';
+import { useCoreData, usePageScan, type CoreData } from '../ui/hooks';
 import { FieldsPanel } from '../ui/FieldsPanel';
 import { PersonaSelect } from '../ui/PersonaSelect';
 import { EmptyState, LogoMark, SectionCard, StatusBanner } from '../ui/components';
@@ -25,6 +26,20 @@ interface Status {
 
 export function App(): React.ReactNode {
   const { data, reload } = useCoreData();
+
+  if (!data) {
+    return <div className="p-4 text-sm text-zinc-400">{translate('loading')}</div>;
+  }
+
+  return (
+    <I18nProvider preferred={data.settings.uiLanguage}>
+      <SidePanelApp data={data} reload={reload} />
+    </I18nProvider>
+  );
+}
+
+function SidePanelApp({ data, reload }: { data: CoreData; reload: () => void }): React.ReactNode {
+  const { t, locale } = useI18n();
   const scanState = usePageScan(true);
   const [overrides, setOverrides] = useState<Record<string, FieldOverride>>({});
   const [status, setStatus] = useState<Status | null>(null);
@@ -36,11 +51,11 @@ export function App(): React.ReactNode {
   const preview = !isExtensionEnvironment;
 
   const activePersona = useMemo(
-    () => data?.personas.find((p) => p.id === data.settings.activePersonaId) ?? null,
+    () => data.personas.find((p) => p.id === data.settings.activePersonaId) ?? null,
     [data],
   );
   const activeScenario = useMemo(
-    () => data?.scenarios.find((s) => s.id === data.settings.activeScenarioId) ?? null,
+    () => data.scenarios.find((s) => s.id === data.settings.activeScenarioId) ?? null,
     [data],
   );
   const effectivePersona = useMemo(
@@ -48,7 +63,7 @@ export function App(): React.ReactNode {
     [activePersona, activeScenario],
   );
   const template = useMemo(
-    () => (scanState.tabUrl ? findTemplateForUrl(data?.templates ?? [], scanState.tabUrl) : null),
+    () => (scanState.tabUrl ? findTemplateForUrl(data.templates, scanState.tabUrl) : null),
     [data, scanState.tabUrl],
   );
   const resolved = useMemo(
@@ -65,18 +80,22 @@ export function App(): React.ReactNode {
     });
   };
 
+  const setUiLanguage = (value: string): void => {
+    void updateSettings(storage, { uiLanguage: value as UiLanguagePref }).then(reload);
+  };
+
   const handleFill = async (): Promise<void> => {
     if (!effectivePersona || !scanState.scan) return;
     setFillBusy(true);
     setStatus(null);
     try {
       if (preview) {
-        setStatus({ kind: 'info', text: 'Preview mode: fill simulated.' });
+        setStatus({ kind: 'info', text: t('previewFillSimulatedShort') });
         return;
       }
       const tab = await getActiveTab();
       if (!tab?.id) {
-        setStatus({ kind: 'error', text: 'No active tab.' });
+        setStatus({ kind: 'error', text: t('noActiveTab') });
         return;
       }
       const response = await sendToTab<FillResult[]>(tab.id, {
@@ -91,12 +110,12 @@ export function App(): React.ReactNode {
           })),
           options: {
             locale: activeScenario?.locale ?? effectivePersona.locale,
-            mode: data?.settings.fillMode ?? 'overwrite',
+            mode: data.settings.fillMode,
           },
         },
       });
       if (!response.ok) {
-        setStatus({ kind: 'error', text: `Fill failed: ${response.error}` });
+        setStatus({ kind: 'error', text: t('fillFailed', { error: response.error }) });
         return;
       }
       const filled = response.data.filter((r) => r.status === 'filled').length;
@@ -104,17 +123,15 @@ export function App(): React.ReactNode {
         id: `action_${Date.now()}`,
         at: Date.now(),
         kind: 'fill',
-        summary: `Filled ${filled} field(s) on ${hostOf(scanState.tabUrl) || 'page'}`,
+        summary: hostOf(scanState.tabUrl)
+          ? t('recentFilledOn', { count: filled, host: hostOf(scanState.tabUrl) })
+          : t('recentFilledOnPage', { count: filled }),
       });
-      setStatus({ kind: 'success', text: `Filled ${filled} field(s).` });
+      setStatus({ kind: 'success', text: t('filledCount', { count: filled }) });
     } finally {
       setFillBusy(false);
     }
   };
-
-  if (!data) {
-    return <div className="p-4 text-sm text-zinc-400">Loading ProfilePack…</div>;
-  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -126,7 +143,7 @@ export function App(): React.ReactNode {
         </div>
         {preview ? (
           <span className="rounded border border-amber-800 bg-amber-950/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-300">
-            Preview mode
+            {t('previewMode')}
           </span>
         ) : null}
       </header>
@@ -134,7 +151,7 @@ export function App(): React.ReactNode {
       <main className="flex flex-1 flex-col gap-4 px-4 py-4">
         {status ? <StatusBanner kind={status.kind}>{status.text}</StatusBanner> : null}
 
-        <SectionCard title="Persona">
+        <SectionCard title={t('personaSection')}>
           <div className="flex flex-col gap-2">
             <PersonaSelect
               personas={data.personas}
@@ -147,18 +164,24 @@ export function App(): React.ReactNode {
             />
             {effectivePersona ? (
               <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-zinc-400">
-                <li>Email: {getPersonaValue(effectivePersona.data, 'email') || '—'}</li>
-                <li>Phone: {getPersonaValue(effectivePersona.data, 'phone') || '—'}</li>
                 <li>
-                  City: {getPersonaValue(effectivePersona.data, 'city') || '—'}
+                  {t('field.email')}: {getPersonaValue(effectivePersona.data, 'email') || '—'}
+                </li>
+                <li>
+                  {t('field.phone')}: {getPersonaValue(effectivePersona.data, 'phone') || '—'}
+                </li>
+                <li>
+                  {t('field.city')}: {getPersonaValue(effectivePersona.data, 'city') || '—'}
                   {getPersonaValue(effectivePersona.data, 'postalCode')
                     ? ` · ${getPersonaValue(effectivePersona.data, 'postalCode')}`
                     : ''}
                 </li>
-                <li>Company: {getPersonaValue(effectivePersona.data, 'company') || '—'}</li>
+                <li>
+                  {t('field.company')}: {getPersonaValue(effectivePersona.data, 'company') || '—'}
+                </li>
               </ul>
             ) : (
-              <EmptyState title="No active persona" hint="Create one in Options." />
+              <EmptyState title={t('noActivePersona')} hint={t('noActivePersonaHint')} />
             )}
             <div className="flex gap-2">
               <button
@@ -167,14 +190,14 @@ export function App(): React.ReactNode {
                 disabled={preview}
                 onClick={() => chrome.runtime.openOptionsPage()}
               >
-                Manage personas
+                {t('managePersonas')}
               </button>
             </div>
           </div>
         </SectionCard>
 
         <SectionCard
-          title="Scenario"
+          title={t('scenarioSection')}
           action={
             activeScenario ? (
               <button
@@ -182,7 +205,7 @@ export function App(): React.ReactNode {
                 className={btn.ghost}
                 onClick={() => void activateScenario(storage, undefined).then(reload)}
               >
-                Clear
+                {t('clear')}
               </button>
             ) : undefined
           }
@@ -190,13 +213,13 @@ export function App(): React.ReactNode {
           <div className="flex flex-col gap-2">
             <select
               className={selectCls}
-              aria-label="Active scenario"
+              aria-label={t('activeScenarioAria')}
               value={activeScenario?.id ?? ''}
               onChange={(event) =>
                 void activateScenario(storage, event.target.value || undefined).then(reload)
               }
             >
-              <option value="">— default (persona locale) —</option>
+              <option value="">{t('scenarioDefaultOption')}</option>
               {data.scenarios.map((scenario) => (
                 <option key={scenario.id} value={scenario.id}>
                   {scenario.name} ({scenario.locale})
@@ -205,27 +228,27 @@ export function App(): React.ReactNode {
             </select>
             <details className="text-xs text-zinc-400">
               <summary className="cursor-pointer select-none hover:text-zinc-200">
-                New scenario
+                {t('newScenario')}
               </summary>
               <div className="mt-2 flex flex-col gap-2">
                 <input
                   className={inputCls}
-                  placeholder="Name (e.g. US checkout)"
-                  aria-label="Scenario name"
+                  placeholder={t('scenarioNamePlaceholder')}
+                  aria-label={t('scenarioNameAria')}
                   value={scenarioName}
                   onChange={(event) => setScenarioName(event.target.value)}
                 />
                 <input
                   className={inputCls}
-                  placeholder="Locale (e.g. en-US)"
-                  aria-label="Scenario locale"
+                  placeholder={t('scenarioLocalePlaceholder')}
+                  aria-label={t('scenarioLocaleAria')}
                   value={scenarioLocale}
                   onChange={(event) => setScenarioLocale(event.target.value)}
                 />
                 <input
                   className={inputCls}
-                  placeholder="Country override (e.g. United States)"
-                  aria-label="Scenario country"
+                  placeholder={t('scenarioCountryPlaceholder')}
+                  aria-label={t('scenarioCountryAria')}
                   value={scenarioCountry}
                   onChange={(event) => setScenarioCountry(event.target.value)}
                 />
@@ -249,7 +272,7 @@ export function App(): React.ReactNode {
                       });
                   }}
                 >
-                  Create & activate
+                  {t('createActivate')}
                 </button>
                 {data.scenarios.length > 0 ? (
                   <button
@@ -260,7 +283,7 @@ export function App(): React.ReactNode {
                       void deleteScenario(storage, activeScenario.id).then(reload);
                     }}
                   >
-                    Delete active scenario
+                    {t('deleteActiveScenario')}
                   </button>
                 ) : null}
               </div>
@@ -268,10 +291,10 @@ export function App(): React.ReactNode {
           </div>
         </SectionCard>
 
-        <SectionCard title="Detected fields">
+        <SectionCard title={t('detectedFields')}>
           {scanState.phase === 'loading' ? (
             <p className="py-4 text-center text-sm text-zinc-500" role="status">
-              Scanning page…
+              {t('scanningPage')}
             </p>
           ) : scanState.phase === 'error' ? (
             <StatusBanner kind="error">{scanState.error}</StatusBanner>
@@ -288,15 +311,15 @@ export function App(): React.ReactNode {
               fillDisabled={!effectivePersona}
             />
           ) : (
-            <EmptyState title="No scan yet" hint="Open a page and scan it from the popup." />
+            <EmptyState title={t('noScanYet')} hint={t('noScanYetHint')} />
           )}
         </SectionCard>
 
-        <SectionCard title="Form templates">
+        <SectionCard title={t('templatesSection')}>
           {data.templates.length === 0 ? (
-            <EmptyState title="No templates yet" hint="Use “Learn This Form” in the popup." />
+            <EmptyState title={t('noTemplatesYet')} hint={t('noTemplatesYetHint')} />
           ) : (
-            <ul className="pp-scrollbar flex max-h-56 flex-col gap-1 overflow-y-auto pr-1">
+            <ul className="pp-scrollbar flex max-h-56 flex-col gap-1 overflow-y-auto pe-1">
               {data.templates.map((template) => (
                 <li
                   key={template.id}
@@ -305,9 +328,9 @@ export function App(): React.ReactNode {
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium text-zinc-200">{template.name}</p>
                     <p className="truncate text-[11px] text-zinc-500">
-                      {template.hostname ?? 'any site'}
+                      {template.hostname ?? t('anySite')}
                       {template.pathPattern ? ` · ${template.pathPattern}` : ''} ·{' '}
-                      {template.mappings.length} mapping(s)
+                      {t('mappingCount', { count: template.mappings.length })}
                     </p>
                   </div>
                   <button
@@ -315,7 +338,7 @@ export function App(): React.ReactNode {
                     className={btn.danger}
                     onClick={() => void deleteTemplate(storage, template.id).then(reload)}
                   >
-                    Delete
+                    {t('delete')}
                   </button>
                 </li>
               ))}
@@ -323,10 +346,10 @@ export function App(): React.ReactNode {
           )}
         </SectionCard>
 
-        <SectionCard title="Settings">
+        <SectionCard title={t('settingsSection')}>
           <div className="flex flex-col gap-2 text-xs text-zinc-300">
             <label className="flex items-center justify-between gap-2">
-              <span>Scan pages automatically</span>
+              <span>{t('scanAutomatically')}</span>
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-emerald-500"
@@ -337,7 +360,7 @@ export function App(): React.ReactNode {
               />
             </label>
             <label className="flex items-center justify-between gap-2">
-              <span>Show field count badge</span>
+              <span>{t('showBadge')}</span>
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-emerald-500"
@@ -348,10 +371,10 @@ export function App(): React.ReactNode {
               />
             </label>
             <label className="flex items-center justify-between gap-2">
-              <span>Fill mode</span>
+              <span>{t('fillMode')}</span>
               <select
                 className={`${selectCls} w-36`}
-                aria-label="Fill mode"
+                aria-label={t('fillMode')}
                 value={data.settings.fillMode}
                 onChange={(event) =>
                   void updateSettings(storage, {
@@ -359,22 +382,45 @@ export function App(): React.ReactNode {
                   }).then(reload)
                 }
               >
-                <option value="overwrite">Overwrite</option>
-                <option value="emptyOnly">Empty fields only</option>
+                <option value="overwrite">{t('fillModeOverwrite')}</option>
+                <option value="emptyOnly">{t('fillModeEmptyOnly')}</option>
+              </select>
+            </label>
+            <label className="flex items-center justify-between gap-2">
+              <span>{t('uiLanguageLabel')}</span>
+              <select
+                className={`${selectCls} w-36`}
+                aria-label={t('uiLanguageAria')}
+                value={data.settings.uiLanguage}
+                onChange={(event) => setUiLanguage(event.target.value)}
+              >
+                <option value="auto">{t('uiLanguageAuto')}</option>
+                <option value="en">{t('uiLanguageEn')}</option>
+                <option value="fa">{t('uiLanguageFa')}</option>
               </select>
             </label>
           </div>
         </SectionCard>
 
-        <SectionCard title="Recent actions">
-          <RecentActions refreshKey={data.personas.length + data.templates.length} />
+        <SectionCard title={t('recentActions')}>
+          <RecentActions
+            refreshKey={data.personas.length + data.templates.length}
+            locale={locale}
+          />
         </SectionCard>
       </main>
     </div>
   );
 }
 
-function RecentActions({ refreshKey }: { refreshKey: number }): React.ReactNode {
+function RecentActions({
+  refreshKey,
+  locale,
+}: {
+  refreshKey: number;
+  locale: string;
+}): React.ReactNode {
+  const { t } = useI18n();
   const [actions, setActions] = useState<Array<{ id: string; at: number; summary: string }>>([]);
 
   useEffect(() => {
@@ -388,15 +434,17 @@ function RecentActions({ refreshKey }: { refreshKey: number }): React.ReactNode 
   }, [refreshKey]);
 
   if (actions.length === 0) {
-    return <EmptyState title="Nothing yet" hint="Fill actions show up here." />;
+    return <EmptyState title={t('nothingYet')} hint={t('nothingYetHint')} />;
   }
 
   return (
-    <ul className="pp-scrollbar flex max-h-48 flex-col gap-1 overflow-y-auto pr-1 text-[11px] text-zinc-400">
+    <ul className="pp-scrollbar flex max-h-48 flex-col gap-1 overflow-y-auto pe-1 text-[11px] text-zinc-400">
       {actions.map((action) => (
         <li key={action.id} className="flex items-center justify-between gap-2">
           <span className="truncate">{action.summary}</span>
-          <time className="shrink-0 text-zinc-600">{new Date(action.at).toLocaleTimeString()}</time>
+          <time className="shrink-0 text-zinc-600">
+            {new Date(action.at).toLocaleTimeString(locale)}
+          </time>
         </li>
       ))}
     </ul>
