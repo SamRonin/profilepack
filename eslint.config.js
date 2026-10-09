@@ -35,7 +35,16 @@ export default tseslint.config(
       globals: {
         console: 'readonly',
         process: 'readonly',
+        URL: 'readonly',
+        Buffer: 'readonly',
       },
+    },
+  },
+  {
+    // Playwright E2E specs: `use()` is a Playwright fixture, not a React hook.
+    files: ['tests/e2e/**/*.ts'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
 );
