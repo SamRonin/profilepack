@@ -10,8 +10,10 @@ import type {
 import {
   ariaLabelledByText,
   collectFields,
+  comboboxOptionElements,
   elementTag,
   formContext,
+  isCombobox,
   isFillable,
   isSensitive,
   isVisible,
@@ -26,10 +28,16 @@ function extractFieldInput(el: Element, tag: DetectedTag): FieldInput {
   const form = formContext(el);
   const label = resolveLabelText(el);
   const ariaLabel = el.getAttribute('aria-label') || ariaLabelledByText(el) || undefined;
-  const isSelect = tag === 'select';
-  const optionTexts = isSelect
-    ? Array.from((el as HTMLSelectElement).options).map((o) => o.text || o.value)
-    : [];
+  const combobox = isCombobox(el);
+  const isSelect = tag === 'select' || combobox;
+  const optionTexts =
+    tag === 'select'
+      ? Array.from((el as HTMLSelectElement).options).map((o) => o.text || o.value)
+      : combobox
+        ? comboboxOptionElements(el)
+            .map((o) => o.textContent?.trim() || o.getAttribute('value') || '')
+            .filter(Boolean)
+        : [];
 
   return {
     tag,
