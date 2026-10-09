@@ -14,5 +14,9 @@
   "extCommandOpen": {
     "message": "Open ProfilePack",
     "description": "Description of the Alt+P keyboard shortcut."
+  },
+  "extCommandQuickFill": {
+    "message": "Quick fill the page with the active persona",
+    "description": "Description of the Alt+Shift+F quick_fill keyboard shortcut."
   }
 }

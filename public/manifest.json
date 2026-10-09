@@ -23,7 +23,7 @@
       "matches": ["http://*/*", "https://*/*"],
       "js": ["content.js"],
       "run_at": "document_idle",
-      "all_frames": false
+      "all_frames": true
     }
   ],
   "action": {
@@ -50,6 +50,13 @@
         "mac": "Alt+P"
       },
       "description": "__MSG_extCommandOpen__"
+    },
+    "quick_fill": {
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "Alt+Shift+F"
+      },
+      "description": "__MSG_extCommandQuickFill__"
     }
   }
 }

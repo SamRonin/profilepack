@@ -14,5 +14,9 @@
   "extCommandOpen": {
     "message": "باز کردن ProfilePack",
     "description": "Description of the Alt+P keyboard shortcut."
+  },
+  "extCommandQuickFill": {
+    "message": "پر کردن سریع صفحه با پرسونای فعال",
+    "description": "Description of the Alt+Shift+F quick_fill keyboard shortcut."
   }
 }
