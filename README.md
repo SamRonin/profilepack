@@ -1,25 +1,23 @@
 # ProfilePack
 
-> **یک پرسونای آزمایشی بسازید. آن را در سراسر وب بازاستفاده کنید.**
+> **Build one synthetic test persona. Reuse it across the web.**
 
-Build one synthetic test persona. Reuse it across the web.
+[فارسی](README.fa.md) | [English](README.md)
 
-**فارسی** | [English](README.en.md)
-
-ProfilePack یک افزونه کروم مبتنی بر داده محلی (Manifest V3) برای توسعه‌دهندگان و مهندسان QA است که فرم‌های ثبت‌نام، پرداخت، صورت‌حساب، آنبوردینگ و جریان‌های چندمرحله‌ای را تست می‌کنند. به‌جای داده‌های تصادفی و ناسازگار، همیشه **یک پرسونای ترکیبی سازگار** در اختیار دارید — همان نام، ایمیل، نشانی و زبان در تمام صفحات یک مسیر تست.
+ProfilePack is a local-first Chrome extension (Manifest V3) for developers and QA engineers who test signups, checkouts, billing, onboarding and multi-step flows. Instead of random form-filler noise, you get **one consistent synthetic persona** — the same name, email, address and locale on every page of the journey.
 
 ```text
-پرسونا: Anna Müller
-نام:          Anna
-نام خانوادگی:  Müller
-ایمیل:        anna.mueller@example.test
-نام کاربری:   anna-mueller
-تلفن:         +49 89 7362541
-کشور:         Germany
-شهر:          München
-کد پستی:      80331
-خیابان:       Examplestraße 12
-شرکت:         Müller Design GmbH
+Persona: Anna Müller
+First name:   Anna
+Last name:    Müller
+Email:        anna.mueller@example.test
+Username:     anna-mueller
+Phone:        +49 89 7362541
+Country:      Germany
+City:         München
+Postal code:  80331
+Street:       Examplestraße 12
+Company:      Müller Design GmbH
 ```
 
 [![CI](https://github.com/SamRonin/profilepack/actions/workflows/ci.yml/badge.svg)](https://github.com/SamRonin/profilepack/actions/workflows/ci.yml)
@@ -28,9 +26,9 @@ ProfilePack یک افزونه کروم مبتنی بر داده محلی (Manife
 
 ---
 
-## مشکل
+## Problem
 
-فرم‌پُرکن‌های رایج برای هر فیلد یک مقدار تصادفی مستقل تولید می‌کنند:
+Traditional form fillers generate an independent random value per field:
 
 ```text
 First Name  = John
@@ -40,33 +38,39 @@ Postal Code = 90210
 Phone       = +1 555 0107
 ```
 
-داده ناسازگار، اعتبارسنجی را می‌شکند، فرم‌های بین‌المللی را می‌شکند، جریان‌های چندمرحله‌ای را می‌شکند و گزارش باگ را غیرقابل بازتولید می‌کند.
+Inconsistent data breaks validation, breaks international forms, breaks multi-step flows, and makes bug reports unreproducible.
 
-## راه‌حل
+## Solution
 
-ProfilePack همیشه **یک پرسونای ترکیبی فعال** نگه می‌دارد و هر فیلد شناخته‌شده را از همان پر می‌کند:
+ProfilePack keeps **one synthetic persona active** and fills every recognized field from it:
 
-- فیلدها از چند سیگنال تشخیص داده می‌شوند (`name`، `id`، `type`، `autocomplete`، `label`، `aria-label`، `placeholder`، متن اطراف، بافت فرم، گزینه‌های `<select>`) و هر نگاشت **امتیاز اطمینان** و دلیل قابل‌فهم دارد.
-- فیلدهای مبهم با برچسب «نیازمند بررسی» علامت می‌خورند — یک بار تصمیم می‌گیرید و نگاشت در یک قالب فرم قابل‌استفاده مجدد ذخیره می‌شود.
-- فیلدهای تاریخ بر اساس زبان و ناحیه فرمت می‌شوند (`14.06.1994` / `06/14/1994` / `1994/06/14`) و سلکت کشورها با `Germany` / `Deutschland` / `DE` / `DEU` مطابقت پیدا می‌کنند.
-- رویدادهای پرکردن با setterهای بومی + ارسال رویدادهای `input`/`change` انجام می‌شوند؛ بنابراین فرم‌های React، Vue و Angular مقادیر را دریافت می‌کنند.
+- Fields are classified from multiple signals (`name`, `id`, `type`, `autocomplete`, `label`, `aria-label`, `placeholder`, nearby text, form context, `<select>` options) with a **confidence score** and a human-readable reason.
+- Ambiguous fields are flagged as _needs review_ — you decide once, the mapping is remembered in a reusable form template.
+- Date fields are formatted per locale (`14.06.1994` / `06/14/1994` / `1994/06/14`), country selects match `Germany` / `Deutschland` / `DE` / `DEU`.
+- Fill events use native setters + dispatched `input`/`change` events, so React, Vue and Angular forms pick the values up.
 
-## امکانات (نسخه ۰.۳)
+## Features (v0.3)
 
-- **مدیریت پرسونا** — ساخت، ویرایش، تکثیر، فعال‌سازی و حذف؛ چهار قالب آماده (مشتری آلمانی / آمریکایی / بریتانیایی / ژاپنی) با **بذر** اختیاری برای پرسوناهای کاملاً تکرارپذیر
-- **اشتقاق قطعی** — ایمیل، نام کاربری و نام کامل از نام/نام خانوادگی مشتق می‌شوند، هرگز تصادفی مستقل نیستند
-- **تشخیص فیلد چندسیگنالی** — واژه‌نامه برچسب‌های انگلیسی + آلمانی، قابل گسترش
-- **امتیاز اطمینان** — هر نگاشت امتیاز، شواهد و پرچم بررسی دارد
-- **نگاشت دستی + یادگیری این فرم** — فرم را دستی پر کنید، فیلدها را نگاشت کنید و یک قالب مستقل از سایت ذخیره کنید
-- **موتور پرکردن** — text/email/tel/url/number، `textarea`، `select` (مقدار/برچسب/کد ISO/متن بومی‌سازی‌شده)، گروه‌های رادیو، چک‌باکس‌ها، `input[type=date]`، تاریخ‌های متنی بر اساس زبان و ناحیه، contenteditable؛ **هرگز ثبت (submit) نمی‌کند**، هرگز فیلدهای رمز عبور، پرداخت و رضایت را پر نمی‌کند
-- **پشتیبانی SPA** — اسکن مجدد با `MutationObserver` (با debounce)، نفوذ به **Shadow DOM** باز
-- **پاپ‌آپ + پنل کناری + تنظیمات**، میان‌بر `Alt+P`، نشان تعداد فیلدها
-- **رابط کاربری فارسی‌محور: فارسی زبان اصلی + انگلیسی مکمل** — همه رشته‌های پاپ‌آپ، پنل کناری و تنظیمات به هر دو زبان موجودند؛ در حالت فارسی چیدمان کاملاً **راست‌به‌چپ (RTL)** می‌شود. در حالت «خودکار»، هر مرورگری که انگلیسی نباشد (از جمله زبان‌های ناشناخته) رابط فارسی می‌گیرد. نام و توضیحات افزونه در منیفست نیز از طریق `_locales` بومی‌سازی شده و به‌طور پیش‌فرض به فارسی برمی‌گردد.
-- **ذخیره‌سازی فقط محلی** (`chrome.storage.local`)، درون‌ریزی/برون‌بری JSON
+- **Persona manager** — create, edit, duplicate, activate, delete; four presets (German / US / UK / Japanese customer) with optional **seed** for fully reproducible personas
+- **Deterministic derivation** — email, username and full name are derived from first/last name, never independently random
+- **Multi-signal field detection** — English + German + Persian label dictionary, extensible
+- **Confidence scoring** — every mapping has a score, evidence and review flag
+- **Manual mapping + Learn This Form** — fill a form by hand, map its fields, save a site-agnostic template
+- **Fill engine** — text/email/tel/url/number, `textarea`, `select` (value/label/ISO code/localized text), radio groups, checkboxes, `input[type=date]`, locale-formatted text dates, contenteditable; **never submits**, never touches passwords, payment or consent fields
+- **Custom ARIA comboboxes** — `[role="combobox"]` widgets (Radix UI, React-Select, Headless UI) are detected and filled via focus/arrow-key/Enter simulation or value-change events
+- **Framework-safe event dispatch** — native prototype setters + `input`/`change` events, plus a deferred `blur` (`queueMicrotask`) so React, Vue and Formik validation pick the values up without state races
+- **SPA support** — debounced `MutationObserver` rescan, open **Shadow DOM** piercing (recursive, including web components)
+- **All frames** — content script runs in subframes too; `input`/`change` listeners stay per-frame and badge reporting only happens from the top frame, so multi-frame pages cause no message interference or badge spam
+- **Popup + Side Panel + Options** pages, `Alt+P` (open popup) and `Alt+Shift+F` (`quick_fill` — fill the active page without opening the popup) shortcuts, field-count badge
+- **Modern typography** — locally bundled `Inter` (Latin) and `Vazirmatn` (Persian/RTL) fonts; no remote font requests, CSP-friendly
+- **Persian-first UI (فارسی primary, English complementary)** — every popup, side panel and options string exists in both languages, with a full **right-to-left** layout in Persian. In Auto mode, any non-English browser (including unknown languages) gets the Persian UI. Manifest name/description are localized via `_locales` and fall back to Persian.
+- **Local-only storage** (`chrome.storage.local`), JSON import/export
 
-> توجه: «زبان رابط کاربری» با «واژه‌نامه تشخیص فرم» فرق دارد. تشخیص برچسب فرم‌ها (مثل «Vorname» یا «PLZ») فعلاً انگلیسی و آلمانی است؛ واژه‌نامه‌های بیشتر (از جمله فارسی) در نقشه راه هستند.
+## Demo
 
-## نصب (Load unpacked)
+> No demo GIF is bundled yet. Once captured, it will be embedded here (`docs/images/demo.gif`) — screenshots of the popup on the bundled `fixtures/*.html` pages are a good starting point.
+
+## Installation (Load unpacked)
 
 ```bash
 git clone https://github.com/SamRonin/profilepack.git
@@ -75,96 +79,103 @@ npm install
 npm run build
 ```
 
-1. `chrome://extensions` را باز کنید
-2. **Developer mode** (بالا سمت راست) را فعال کنید
-3. روی **Load unpacked** کلیک کنید
-4. پوشه ساخته‌شده **`dist/`** را انتخاب کنید
-5. ProfilePack را پین کنید و روی هر فرم `Alt+P` بزنید
+1. Open `chrome://extensions`
+2. Enable **Developer mode** (top right)
+3. Click **Load unpacked**
+4. Select the generated **`dist/`** folder
+5. Pin ProfilePack and press `Alt+P` on any form (or `Alt+Shift+F` for a one-shot quick fill with the active persona)
 
-به کروم ۱۱۶ به بعد نیاز دارد (API پنل کناری).
+Requires Chrome 116+ (Side Panel API).
 
-## توسعه
+## Development
 
 ```bash
-npm install        # نصب وابستگی‌ها
-npm run dev        # بیلد ناظر (صفحه‌ها + background + content script)
-npm run build      # typecheck + بیلد + اعتبارسنجی dist/
-npm run test       # مجموعه تست vitest (۱۰۸ تست واحد و یکپارچه)
+npm install        # install dependencies
+npm run dev        # watch builds (pages + background + content script)
+npm run build      # typecheck + build + validate dist/
+npm run test       # vitest suite (unit + integration tests)
+npm run test:e2e   # Playwright E2E (Chromium + loaded dist/ extension)
 npm run lint       # eslint
 npm run typecheck  # tsc --noEmit
 npm run format     # prettier
 ```
 
-پس از `npm run dev`، برای اعمال بیلدهای جدید، افزونه را در `chrome://extensions` دوباره بارگذاری (reload) کنید. برای جزئیات بیشتر به [docs/development.md](docs/development.md) و [CONTRIBUTING.md](CONTRIBUTING.md) مراجعه کنید.
+After `npm run dev`, reload the extension in `chrome://extensions` to pick up rebuilds. See [docs/development.md](docs/development.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## معماری
+## Architecture
 
 ```text
-پاپ‌آپ / پنل کناری / تنظیمات (React)
-        ↓ پیام‌های تایپ‌شده
-Service Worker پس‌زمینه (روتر، نشان، داده اولیه)
-        ↓ پیام‌رسانی chrome.tabs
-Content script (IIFE، دنیای ایزوله)
+Popup / Side Panel / Options (React)
+        ↓ typed messages
+Background service worker (router, badge, first-run seeding)
+        ↓ chrome.tabs messaging
+Content script (IIFE, isolated world)
         ↓
-Detector → Classifier → موتور نگاشت → موتور پرکردن → Storage
-                                            ↘ chrome.storage.local
+Detector → Classifier → Mapping engine → Fill engine → Storage
+                                              ↘ chrome.storage.local
 ```
 
-منطق دامنه (Domain) بدون فریم‌ورک و بدون UI است؛ ذخیره‌سازی پشت انتزاع `StorageService` قرار دارد. جزئیات: [docs/architecture.md](docs/architecture.md) (مستندات فنی به انگلیسی است).
+Domain logic is framework-free and UI-free; storage sits behind a `StorageService` abstraction. Details: [docs/architecture.md](docs/architecture.md) (technical docs are in English).
 
-## زبان‌ها
+## Privacy
 
-**فارسی زبان اصلی پروژه است و انگلیسی مکمل.** رابط کاربری افزونه به هر دو زبان ارائه می‌شود:
+- **Local-first:** personas, templates and settings live in `chrome.storage.local` on your device. Nothing is uploaded — the extension makes **no network requests at all**.
+- **No analytics, no telemetry, no tracking, no accounts.**
+- Generated data is synthetic by construction: emails use reserved `example.test` domains, US phone numbers use the reserved `555-01XX` range, UK numbers the reserved `01632 960XXX` range, streets are named Examplestraße / Example Street.
+- Persona values are never written to the console, logs, URLs or error messages.
 
-| کجا                                                       | رفتار                                                                                                                                                                                                                       |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| منیفست (نام، توضیحات، برچسب میان‌بر)                      | کروم بر اساس زبان مرورگر لوکال را انتخاب می‌کند (`_locales/fa` + `_locales/en` با `default_locale: fa`) — هر زبانی غیر از انگلیسی به فارسی برمی‌گردد.                                                                       |
-| پاپ‌آپ، پنل کناری، تنظیمات                                | از تنظیم «زبان رابط کاربری» پیروی می‌کند — خودکار، فارسی یا English — قابل تغییر در فوتر پاپ‌آپ و تنظیمات. در حالت «خودکار» فقط مرورگرهای انگلیسی English می‌گیرند؛ بقیه فارسی. فارسی راست‌به‌چپ (`dir="rtl"`) رندر می‌شود. |
-| نتایج اسکن (محدودیت‌ها، راهنمای بررسی، دکمه‌ها، وضعیت‌ها) | کاملاً ترجمه‌شده؛ محدودیت‌های اسکن به‌صورت داده ساختاریافته ذخیره و هنگام رندر بومی‌سازی می‌شوند.                                                                                                                           |
+## Permissions
 
-مستندات انگلیسی: **[README.en.md](README.en.md)**.
+| Permission                                     | Why it is needed                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `storage`                                      | Save personas, templates and settings locally (`chrome.storage.local`).                                                                                                                                                                                                                                        |
+| `scripting`                                    | Re-inject the content script on demand into tabs that were open before install/reload.                                                                                                                                                                                                                         |
+| `sidePanel`                                    | Provide the Side Panel UI.                                                                                                                                                                                                                                                                                     |
+| Host permissions (`http://*/*`, `https://*/*`) | The core purpose of the extension is detecting and filling forms on the sites you are testing. Host access is used exclusively for the content script (declared at `document_idle`, all frames, top frame drives the badge). No `tabs`, `history`, `cookies`, `webRequest` or `downloads` access is requested. |
 
-## حریم خصوصی
+## Languages
 
-- **مبتنی بر داده محلی:** پرسوناها، قالب‌ها و تنظیمات در `chrome.storage.local` روی دستگاه شما می‌مانند. هیچ‌چیز آپلود نمی‌شود — افزونه **هیچ درخواست شبکه‌ای نمی‌زند**.
-- **بدون آنالیتیکس، بدون تله‌متری، بدون ردیابی، بدون حساب کاربری.**
-- داده‌های تولیدشده از اساس ترکیبی‌اند: ایمیل‌ها از دامنه‌های رزرو `example.test`، شماره تلفن آمریکا از بازه رزرو `555-01XX`، شماره بریتانیا از بازه رزرو `01632 960XXX` و خیابان‌ها با نام Examplestraße / Example Street.
-- مقادیر پرسونا هرگز در کنسول، لاگ، URL یا پیام‌های خطا نوشته نمی‌شوند.
+**Persian is the primary language of the project; English is complementary.** The extension UI ships in both:
 
-## مجوزها
+| Where                                                        | Behavior                                                                                                                                                                                                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Manifest (name, description, shortcut label)                 | Chrome picks the locale from the browser language (`_locales/fa` + `_locales/en`, `default_locale: fa`) — any language other than English falls back to Persian.                                                                     |
+| Popup, Side Panel, Options                                   | Follows the **UI language** setting — Auto, فارسی or English — changeable in the popup footer and in Options. In Auto, only English browsers get English; everything else gets Persian. Persian renders right-to-left (`dir="rtl"`). |
+| Scan results (field limits, review hints, buttons, statuses) | Fully translated; scan limitations are stored as structured data and localized at render time.                                                                                                                                       |
 
-| مجوز                                       | چرا لازم است                                                                                                                                                                                                                                              |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `storage`                                  | ذخیره محلی پرسوناها، قالب‌ها و تنظیمات (`chrome.storage.local`).                                                                                                                                                                                          |
-| `scripting`                                | تزریق مجدد content script به تب‌هایی که قبل از نصب/بارگذاری مجدد باز بوده‌اند.                                                                                                                                                                            |
-| `sidePanel`                                | ارائه رابط پنل کناری.                                                                                                                                                                                                                                     |
-| مجوزهای هاست (`http://*/*`، `https://*/*`) | هدف اصلی افزونه، تشخیص و پرکردن فرم‌ها در سایت‌هایی است که تست می‌کنید. دسترسی هاست فقط برای content script استفاده می‌شود (در `document_idle`، فقط فریم بالا). هیچ دسترسی به `tabs`، `history`، `cookies`، `webRequest` یا `downloads` درخواست نشده است. |
+Note the distinction: this is about the **UI language**. The **form-detection dictionary** (matching website labels like "Vorname" / "PLZ" / «نام خانوادگی») currently covers English, German and Persian — see the roadmap.
 
-## تست
+The primary documentation of the extension UI is bilingual; this README is the English repository overview — the Persian mirror lives at **[README.fa.md](README.fa.md)**.
 
-`npm run test` تعداد ۱۰۸ تست Vitest را اجرا می‌کند که طبقه‌بندی فیلدها (EN/DE)، امتیاز اطمینان، نگاشت‌های دستی، تولید پرسونا + قطعیت، ماندگاری ذخیره‌سازی، تطبیق قالب، تطبیق سلکت، فرمت تاریخ، i18n (برابری کلیدهای واژه‌نامه FA/EN، تشخیص زبان فارسی‌محور، درون‌یابی)، موتور پرکردن (jsdom) و جریان‌های کامل اسکن → نگاشت → پرکردن روی فیکسچرهای HTML در [`fixtures/`](fixtures/) را پوشش می‌دهد.
+## Testing
 
-## مشارکت
+`npm run test` runs the Vitest suite covering field classification (EN/DE/FA), confidence scoring, manual overrides, persona generation + determinism, storage persistence, template matching, select matching, date formatting, i18n (FA/EN dictionary parity, Persian-first language resolution, interpolation), the fill engine (jsdom) and end-to-end scan → map → fill flows against the HTML fixtures in [`fixtures/`](fixtures/).
 
-از هر مشارکتی استقبال می‌شود — گزارش باگ، فیکسچر، واژه‌های واژه‌نامه، قالب‌های آماده جدید، مستندات. از [CONTRIBUTING.md](CONTRIBUTING.md) شروع کنید. مسائل امنیتی را لطفاً طبق [SECURITY.md](SECURITY.md) و از طریق گزارش‌گیری خصوصی آسیب‌پذیری گیت‌هاب (نه Issue عمومی) اعلام کنید.
+`npm run test:e2e` runs Playwright end-to-end tests in Chromium with the built extension loaded from `dist/` (run `npm run build` first). The config lives in [`playwright.config.ts`](playwright.config.ts), tests in [`tests/e2e/`](tests/e2e/).
 
-## نقشه راه
+## Contributing
 
-**v0.4** — زبان‌های بیشتر برای واژه‌نامه تشخیص فرم (فارسی و سایر زبان‌ها)، نگاشت‌های غنی‌تر، بهبود سناریوها
-**آینده** — معماری همگام‌سازی اختیاری، گردش‌کار تیمی، خروجی Playwright/Cypress، نگاشت کمکی با هوش مصنوعی
+Contributions welcome — bug reports, fixtures, dictionary terms, new presets, docs. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Please read [SECURITY.md](SECURITY.md) before reporting anything security-related (use GitHub's private vulnerability reporting, not public issues).
 
-## محدودیت‌های شناخته‌شده
+## Roadmap
 
-- **iframeهای دارای مبدأ متفاوت** اسکن نمی‌شوند (فقط فریم بالا، به‌صورت عمدی).
-- **Shadow DOM بسته** توسط هیچ افزونه‌ای قابل خواندن نیست؛ پاپ‌آپ تشخیص شادوروت بسته را گزارش می‌کند.
-- **صفحه‌های محدودشده مرورگر** (`chrome://`، فروشگاه وب کروم، نمایشگر PDF) نمی‌توانند content script اجرا کنند.
-- برچسب‌های بومی‌سازی‌شده غیر از انگلیسی و آلمانی به سیگنال‌های `autocomplete`/`type` برمی‌گردند یا به فهرست «نیازمند بررسی» می‌روند.
-- **رابط کاربری** فارسی/انگلیسی است، اما دلایل تشخیص classifier و جزئیات تشخیصی content script انگلیسی می‌مانند — این‌ها خروجی اشکال‌زدایی مخصوص توسعه‌دهنده است.
-- رابط فارسی از ارقام لاتین استفاده می‌کند و توکن‌های فنی (JSON، لوکال‌هایی مثل `de-DE`) عمداً ترجمه نمی‌شوند.
-- ورودی‌های مبتنی بر Canvas و کتابخانه‌های ویجت کاملاً سفارشی به نگاشت دستی نیاز دارند.
-- سایت‌های دارای سازوکار ضد اتوماسیون ممکن است پرکردن برنامه‌ای را مانند هر auto-fill دیگری در نظر بگیرند.
-- ProfilePack هرگز فرم‌ها را ثبت نمی‌کند و هرگز اطلاعات ورود را پر نمی‌کند — این یک تصمیم عمدی است.
+**v0.4** — more form-detection label languages (Persian and others), richer mappings, scenario improvements
+**Future** — optional sync architecture (the storage abstraction already leaves room for it), team workflows, Playwright/Cypress export, AI-assisted mapping
 
-## مجوز (لایسنس)
+Implemented features are tracked in [CHANGELOG.md](CHANGELOG.md).
+
+## Known Limitations
+
+- **Cross-origin iframes** run their own content-script instance (same-origin frames are scanned); each frame classifies and fills independently.
+- **Closed Shadow DOM** cannot be read by any extension; the popup reports when closed roots are detected.
+- **Browser-restricted pages** (`chrome://`, Chrome Web Store, PDF viewer) cannot run content scripts.
+- Kanji/CJK/localized labels beyond English, German and Persian fall back to `autocomplete`/`type` signals or end up in _needs review_.
+- The **UI** is Persian/English, but classifier evidence reasons and content-script diagnostic details remain English — they are developer-facing debug output.
+- The Persian UI uses Latin digits and keeps technical tokens (JSON, locales like `de-DE`) untranslated, by design.
+- Canvas-based inputs and heavily customized widget libraries need manual mapping.
+- Sites with anti-automation heuristics may treat programmatic fills like any other autofill.
+- ProfilePack never submits forms and never fills credentials — by design, not by accident.
+
+## License
 
 [MIT](LICENSE) © ProfilePack Contributors
