@@ -178,6 +178,40 @@ describe('scan -> detect -> map integration (fixtures)', () => {
     const el = resolveSelector(first!.selector, doc);
     expect(el?.id).toBe('s-first');
   });
+
+  it('persian-form: detects Persian labels end-to-end', () => {
+    const doc = loadFixture('persian-form.html');
+    const scan = scanDocument(doc);
+
+    expect(classifyOf(scan, '#fa-first').field).toBe('firstName');
+    expect(classifyOf(scan, '#fa-last').field).toBe('lastName');
+    expect(classifyOf(scan, '#fa-full').field).toBe('fullName');
+    expect(classifyOf(scan, '#fa-username').field).toBe('username');
+    expect(classifyOf(scan, '#fa-email').field).toBe('email');
+    expect(classifyOf(scan, '#fa-mobile').field).toBe('phone');
+    expect(classifyOf(scan, '#fa-postal').field).toBe('postalCode');
+    expect(classifyOf(scan, '#fa-address').field).toBe('addressLine1');
+    expect(classifyOf(scan, '#fa-city').field).toBe('city');
+    expect(classifyOf(scan, '#fa-province').field).toBe('state');
+    expect(classifyOf(scan, '#fa-company').field).toBe('company');
+    // «کد ملی» is the Iranian national ID — the SSN equivalent, never filled
+    expect(scan.fields.find((f) => f.selector === '#fa-national-id')!.classification.field).toBe(
+      'neverFill',
+    );
+  });
+
+  it('combobox-form: classifies the custom ARIA combobox from its options', () => {
+    const doc = loadFixture('combobox-form.html');
+    const scan = scanDocument(doc);
+
+    const combo = scan.fields.find((f) => f.id === 'widget-country');
+    expect(combo).toBeDefined();
+    expect(combo!.isSelect).toBe(true);
+    expect(combo!.optionTexts).toContain('Germany');
+    expect(combo!.classification.field).toBe('country');
+    // the hidden machine value stays unscanned (input[type=hidden])
+    expect(scan.fields.find((f) => f.id === 'widget-country-value')).toBeUndefined();
+  });
 });
 
 describe('persona -> fill -> template reuse integration', () => {
@@ -254,6 +288,67 @@ describe('persona -> fill -> template reuse integration', () => {
       persona.data.identity.fullName,
     );
     expect(results.find((r) => r.selector === '#k-vorname')?.status).toBe('skipped');
+  });
+
+  it('fills the Persian form and the custom combobox end-to-end', async () => {
+    // Persian labels resolve through the fa dictionary; the combobox is
+    // driven through focus -> open -> option activation -> Enter.
+    const doc = await loadFixtureLive('combobox-form.html');
+    const scan = scanDocument(doc);
+    const persona = generatePersona('de', { seed: 123 });
+    const mappings = resolveMappings(scan).map(({ selector, label, target, customValue }) => ({
+      selector,
+      label,
+      target,
+      customValue,
+    }));
+
+    const results = fillFields(
+      { persona, mappings, options: { locale: 'de-DE', mode: 'overwrite' } },
+      doc,
+    );
+
+    expect(results.find((r) => r.selector === '#widget-country')?.status).toBe('filled');
+    expect((doc.getElementById('widget-country') as HTMLInputElement).value).toBe('Germany');
+    // the widget committed the machine value into the hidden input
+    expect((doc.getElementById('widget-country-value') as HTMLInputElement).value).toBe('DE');
+    expect((doc.getElementById('widget-city') as HTMLInputElement).value).toBe(
+      persona.data.address.city,
+    );
+  });
+
+  it('fills a full Persian form from the persona', () => {
+    const doc = loadFixture('persian-form.html');
+    const scan = scanDocument(doc);
+    const persona = generatePersona('de', { seed: 42 });
+    const mappings = resolveMappings(scan).map(({ selector, label, target, customValue }) => ({
+      selector,
+      label,
+      target,
+      customValue,
+    }));
+
+    const results = fillFields(
+      { persona, mappings, options: { locale: 'de-DE', mode: 'overwrite' } },
+      doc,
+    );
+
+    const filled = results.filter((r) => r.status === 'filled');
+    expect(filled.length).toBeGreaterThanOrEqual(9);
+    expect((doc.getElementById('fa-first') as HTMLInputElement).value).toBe(
+      persona.data.identity.firstName,
+    );
+    expect((doc.getElementById('fa-last') as HTMLInputElement).value).toBe(
+      persona.data.identity.lastName,
+    );
+    expect((doc.getElementById('fa-email') as HTMLInputElement).value).toBe(
+      persona.data.contact.email,
+    );
+    expect((doc.getElementById('fa-postal') as HTMLInputElement).value).toBe(
+      persona.data.address.postalCode,
+    );
+    // کد ملی is never filled
+    expect((doc.getElementById('fa-national-id') as HTMLInputElement).value).toBe('');
   });
 
   it('keeps values consistent across multi-step flows', () => {

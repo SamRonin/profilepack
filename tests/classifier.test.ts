@@ -65,6 +65,53 @@ describe('field classification (language support)', () => {
   });
 });
 
+describe('field classification (Persian)', () => {
+  it('maps Persian identity labels', () => {
+    expect(classify({ label: 'نام' }).field).toBe('firstName');
+    expect(classify({ label: 'نام خانوادگی' }).field).toBe('lastName');
+    expect(classify({ label: 'نام و نام خانوادگی' }).field).toBe('fullName');
+    expect(classify({ label: 'نام کاربری' }).field).toBe('username');
+  });
+
+  it('maps Persian contact labels', () => {
+    expect(classify({ label: 'ایمیل' }).field).toBe('email');
+    expect(classify({ label: 'شماره موبایل' }).field).toBe('phone');
+    expect(classify({ label: 'شماره همراه' }).field).toBe('phone');
+    expect(classify({ label: 'تلفن همراه' }).field).toBe('phone');
+  });
+
+  it('maps Persian address labels', () => {
+    expect(classify({ label: 'کد پستی' }).field).toBe('postalCode');
+    expect(classify({ label: 'کدپستی' }).field).toBe('postalCode');
+    expect(classify({ label: 'نشانی' }).field).toBe('addressLine1');
+    expect(classify({ label: 'آدرس' }).field).toBe('addressLine1');
+    expect(classify({ label: 'استان' }).field).toBe('state');
+    expect(classify({ label: 'شهر' }).field).toBe('city');
+    expect(classify({ label: 'خیابان' }).field).toBe('street');
+  });
+
+  it('never fills Persian sensitive fields (national ID is the SSN equivalent)', () => {
+    expect(classify({ label: 'کد ملی' }).field).toBe('neverFill');
+    expect(classify({ label: 'کدملی' }).field).toBe('neverFill');
+    expect(classify({ label: 'رمز عبور' }).field).toBe('neverFill');
+    expect(classify({ label: 'شماره کارت' }).field).toBe('neverFill');
+  });
+
+  it('normalizes ZWNJ (نیم‌فاصله) and Arabic letter variants', () => {
+    expect(classify({ label: 'نام\u200Cخانوادگی' }).field).toBe('lastName');
+    expect(classify({ label: 'کد\u200Cپستی' }).field).toBe('postalCode');
+    // Arabic yeh (ي) folds to Persian yeh (ی)
+    expect(classify({ label: 'نام خانوادگي' }).field).toBe('lastName');
+  });
+
+  it('prefers the most specific Persian term within one signal', () => {
+    // «نام کاربری» must resolve to username, not fall back to firstName (نام).
+    const result = classify({ label: 'نام کاربری' });
+    expect(result.field).toBe('username');
+    expect(result.confidence).toBeGreaterThanOrEqual(0.85);
+  });
+});
+
 describe('field classification (signals)', () => {
   it('uses autocomplete tokens including section prefixes', () => {
     expect(classify({ autocomplete: 'given-name' }).field).toBe('firstName');
@@ -117,5 +164,13 @@ describe('tokenizer', () => {
     expect(tokenize('Straße')).toEqual(['strasse']);
     expect(tokenize('billing-postal-code')).toEqual(['billing', 'postal', 'code']);
     expect(tokenize('addressLine1')).toEqual(['address', 'line', '1']);
+  });
+
+  it('keeps Persian tokens, folds ZWNJ and Persian digits', () => {
+    expect(tokenize('نام خانوادگی')).toEqual(['نام', 'خانوادگی']);
+    expect(tokenize('کد\u200Cپستی')).toEqual(['کد', 'پستی']);
+    expect(tokenize('کدپستی ۱۲۳')).toEqual(['کدپستی', '123']);
+    // Latin + Persian mixed tokens stay separated.
+    expect(tokenize('userنام')).toEqual(['user', 'نام']);
   });
 });

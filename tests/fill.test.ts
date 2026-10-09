@@ -162,6 +162,87 @@ describe('fill engine', () => {
     expect(results[1]).toMatchObject({ status: 'not-found' });
   });
 
+  it('dispatches a deferred blur/focusout after input + change (framework sync)', async () => {
+    buildDom('<input id="name" type="text" />');
+    const input = document.getElementById('name') as HTMLInputElement;
+    const events: string[] = [];
+    input.addEventListener('input', () => events.push('input'));
+    input.addEventListener('change', () => events.push('change'));
+    input.addEventListener('blur', () => events.push('blur'));
+    input.addEventListener('focusout', () => events.push('focusout'));
+
+    const persona = generatePersona('de', { seed: 9 });
+    fillFields(request(persona, [{ selector: '#name', target: 'firstName' }]));
+
+    // input/change dispatch synchronously; blur is deferred one microtask
+    // so framework render cycles (React/Vue/Formik) settle without races.
+    expect(events).toEqual(['input', 'change']);
+    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    expect(events).toEqual(['input', 'change', 'blur', 'focusout']);
+  });
+
+  it('fills custom ARIA comboboxes via focus, open, option activation and Enter', () => {
+    buildDom(`
+      <input id="cb-country" role="combobox" aria-expanded="false" aria-controls="cb-list" type="text" />
+      <input id="cb-country-value" type="hidden" />
+      <ul id="cb-list" role="listbox" hidden>
+        <li role="option" data-value="DE">Germany</li>
+        <li role="option" data-value="AT">Austria</li>
+      </ul>
+    `);
+    const trigger = document.getElementById('cb-country') as HTMLInputElement;
+    const hidden = document.getElementById('cb-country-value') as HTMLInputElement;
+    const events: string[] = [];
+    trigger.addEventListener('focus', () => events.push('focus'));
+    trigger.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'ArrowDown') {
+        events.push('open');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+      if ((e as KeyboardEvent).key === 'Enter') events.push('enter');
+    });
+    document.querySelectorAll('#cb-list [role="option"]').forEach((opt) => {
+      opt.addEventListener('mousedown', () => {
+        hidden.value = (opt as HTMLElement).getAttribute('data-value') ?? '';
+        trigger.value = (opt as HTMLElement).textContent ?? '';
+        trigger.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    const persona = generatePersona('de', { seed: 9 });
+    const results = fillFields(request(persona, [{ selector: '#cb-country', target: 'country' }]));
+
+    expect(results[0]?.status).toBe('filled');
+    expect(events).toEqual(['focus', 'open', 'enter']);
+    expect(hidden.value).toBe('DE');
+    expect(trigger.value).toBe('Germany');
+  });
+
+  it('falls back to value-change simulation for input comboboxes without options', () => {
+    buildDom('<input id="cb-free" role="combobox" aria-expanded="false" type="text" />');
+    const trigger = document.getElementById('cb-free') as HTMLInputElement;
+
+    const persona = generatePersona('de', { seed: 9 });
+    const results = fillFields(request(persona, [{ selector: '#cb-free', target: 'city' }]));
+
+    expect(results[0]?.status).toBe('filled');
+    expect(trigger.value).toBe(persona.data.address.city);
+  });
+
+  it('reports skipped when no combobox option matches', () => {
+    buildDom(`
+      <div id="cb-div" role="combobox" aria-expanded="false" aria-controls="cb-div-list"></div>
+      <ul id="cb-div-list" role="listbox" hidden>
+        <li role="option" data-value="FR">France</li>
+      </ul>
+    `);
+
+    const persona = generatePersona('de', { seed: 9 });
+    const results = fillFields(request(persona, [{ selector: '#cb-div', target: 'country' }]));
+
+    expect(results[0]).toMatchObject({ status: 'skipped', detail: 'no matching option' });
+  });
+
   it('ignores mappings and reports empty persona values', () => {
     buildDom('<input id="a" type="text" /><input id="b" type="text" />');
     const persona = generatePersona('de', { seed: 9 });

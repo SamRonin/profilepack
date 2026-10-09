@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Custom ARIA combobox form</title>
+  </head>
+  <body>
+    <!--
+      A React-Select/Radix-style custom combobox: the trigger has
+      role="combobox", the options live in an aria-associated listbox
+      (portal-style, rendered anywhere in the document). The widget
+      commits the selected option into a hidden input so tests (and
+      real forms) can read the value.
+    -->
+    <form id="widget-form" name="widget_form" action="/widget" method="post">
+      <label for="widget-country">Country</label>
+      <input
+        id="widget-country"
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="widget-country-listbox"
+        autocomplete="off"
+        type="text"
+      />
+      <input id="widget-country-value" name="country" type="hidden" />
+      <ul id="widget-country-listbox" role="listbox" hidden>
+        <li role="option" id="opt-de" data-value="DE">Germany</li>
+        <li role="option" id="opt-at" data-value="AT">Austria</li>
+        <li role="option" id="opt-us" data-value="US">United States</li>
+      </ul>
+
+      <label for="widget-city">City</label>
+      <input id="widget-city" name="city" type="text" />
+
+      <button type="submit">Save</button>
+    </form>
+
+    <script>
+      // Minimal combobox behaviour mirroring Radix UI / React-Select:
+      // ArrowDown opens, mousedown/click on an option commits it.
+      window.addEventListener('DOMContentLoaded', function () {
+        var trigger = document.getElementById('widget-country');
+        var listbox = document.getElementById('widget-country-listbox');
+        var hidden = document.getElementById('widget-country-value');
+
+        trigger.addEventListener('keydown', function (event) {
+          if (event.key === 'ArrowDown') {
+            trigger.setAttribute('aria-expanded', 'true');
+            listbox.hidden = false;
+          }
+          if (event.key === 'Enter') {
+            event.preventDefault();
+          }
+        });
+
+        Array.prototype.forEach.call(
+          listbox.querySelectorAll('[role="option"]'),
+          function (option) {
+            option.addEventListener('mousedown', function () {
+              trigger.value = option.textContent.trim();
+              hidden.value = option.getAttribute('data-value');
+              trigger.setAttribute('aria-expanded', 'false');
+              listbox.hidden = true;
+            });
+            option.addEventListener('click', function () {
+              trigger.value = option.textContent.trim();
+              hidden.value = option.getAttribute('data-value');
+              trigger.setAttribute('aria-expanded', 'false');
+              listbox.hidden = true;
+            });
+          },
+        );
+      });
+    </script>
+  </body>
+</html>
