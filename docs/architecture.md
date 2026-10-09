@@ -32,7 +32,7 @@ Storage (chrome.storage.local via StorageService abstraction)
 
 A scan request travels down: a UI context asks the background worker, the worker relays to the content script of the active tab, the content script detects and classifies fields, and the result is returned to the UI. A fill request travels the same path with a mapping attached. Storage is not a terminal stage in a strict sense: UI, background, and services all read and write through the same `StorageService` abstraction; the fill engine itself only touches the page, never storage.
 
-The content script runs in the ISOLATED world at `document_idle`, in the top frame only (`all_frames: false`). It owns the Detector, Classifier, Mapping engine, and Fill Engine because only page-context code can traverse the DOM and drive field values.
+The content script runs in the ISOLATED world at `document_idle`, in every `http(s)` frame (`all_frames: true`). Each frame owns its own Detector, Classifier, Mapping engine, and Fill Engine instance because only page-context code can traverse the DOM and drive field values; a per-frame `window.__profilepackLoaded` guard prevents duplicate listeners after on-demand re-injection, and only the top frame reports the toolbar badge so subframes cannot overwrite it or spam the worker.
 
 ## Module walkthrough
 
@@ -97,8 +97,9 @@ The content script's Detector traverses the DOM, including open shadow roots, an
 - nearby text (annotations around the field)
 - form context (fieldset legends, surrounding headings, the form's purpose)
 - `select` options (for select elements, the option labels and values)
+- custom ARIA comboboxes (`[role="combobox"]`): option labels from the associated listbox (`aria-controls` / `aria-owns`, root-aware)
 
-**Dictionary.** Label-based signals are matched against a per-locale dictionary. Version 0.1 ships with English and German entries. The dictionary maps field concepts (for example "first name" or "postal code") to locale keyword lists, and an autocomplete map links standard HTML `autocomplete` tokens to persona fields.
+**Dictionary.** Label-based signals are matched against a per-locale dictionary. The current dictionary ships with English, German, and Persian entries (the tokenizer normalizes ZWNJ, Arabic/Persian letter variants and Persian digits so Persian labels match regardless of how they are typed). The dictionary maps field concepts (for example "first name", "Vorname" or «نام خانوادگی») to locale keyword lists, and an autocomplete map links standard HTML `autocomplete` tokens to persona fields.
 
 **Confidence scoring.** Scoring is conceptual, not a bag of magic numbers:
 
@@ -151,14 +152,15 @@ The key names are internal to the extension. Because every read and write goes t
 
 The content script is built separately as an IIFE because MV3 content scripts are declared as plain scripts in the manifest and cannot rely on ES module imports being resolvable in the page's isolated world. The whole content pipeline (detector, classifier, fill runner) must therefore be bundled into one file with no runtime imports.
 
+`npm run test` runs the Vitest unit and jsdom integration suite; `npm run test:e2e` runs Playwright in Chromium with the built extension loaded from `dist/` (run `npm run build` first), served from the fixtures directory by `scripts/e2e-server.mjs`.
+
 ## Limitations
 
-Stated honestly, version 0.1 does not support:
+Stated honestly, the current version does not support:
 
-- Cross-origin iframes (`all_frames` is `false`; only the top frame is handled).
 - Closed shadow roots (the Detector reads open shadow DOM only).
 - Browser-restricted pages such as `chrome://` pages, the Chrome Web Store, and the PDF viewer.
 - Canvas-based inputs.
-- Heavy custom widget libraries out of the box; these often need manual mapping.
-- Label languages other than English and German (only partial recognition elsewhere).
+- Heavy custom widget libraries out of the box; these often need manual mapping (ARIA comboboxes are supported, fully bespoke widgets are not).
+- Label languages other than English, German, and Persian (only partial recognition elsewhere).
 - Sites with anti-automation heuristics may flag or reject programmatic fills.

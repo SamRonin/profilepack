@@ -38,7 +38,7 @@ How it works:
   fields, including fields inside open shadow DOM, and classifies them using
   multiple signals (autocomplete, name, id, type, label, aria-label,
   placeholder, nearby text, form context, select options) with confidence
-  scores. English and German labels are recognized.
+  scores. English, German, and Persian labels are recognized.
 - Review the suggested mapping, adjust anything manually, and fill. The fill
   engine sets values through native setters and dispatched input and change
   events, so it works with React, Vue, and Angular apps. Select fields can be
@@ -58,7 +58,7 @@ Known limitations in this version: cross-origin iframes are not supported,
 closed shadow DOM cannot be read, browser-restricted pages (chrome:// pages,
 the Chrome Web Store, the PDF viewer) are not supported, canvas-based inputs
 are not supported, and heavy custom widget libraries may need manual mapping.
-Only English and German form labels are recognized so far.
+English, German, and Persian form labels are recognized.
 
 ProfilePack is an open-source developer tool under the MIT license.
 ```

@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Persian form-label dictionary** — the classifier now recognizes common Persian labels (نام، نام خانوادگی، شماره موبایل/همراه، کد پستی، نشانی/آدرس، استان، شهر، ایمیل، کدملی and more). The tokenizer preserves Arabic-script text, folds ZWNJ (نیم‌فاصله), Arabic Yeh/Kaf variants and Persian digits, and splits Latin/Arabic-script boundaries. Persian national ID (کد ملی) is classified `neverFill` — the SSN equivalent is never automated.
+- **Custom ARIA combobox support** — `[role="combobox"]` widgets (Radix UI, React-Select, Headless UI) are detected (options read from the associated listbox via `aria-controls`/`aria-owns`, root-aware) and filled by simulating focus, ArrowDown (open), option activation (pointer/mouse/click) and Enter; input-based comboboxes without reachable options fall back to value-change simulation.
+- **Playwright E2E suite** — `@playwright/test` devDependency, `playwright.config.ts` (Chromium + `--disable-extensions-except=./dist` / `--load-extension=./dist`), a zero-dependency fixtures server (`scripts/e2e-server.mjs`) and `tests/e2e/fill.spec.ts` driving the real scan → map → fill pipeline in the built extension. Run with `npm run test:e2e` (build first).
+- **Quick-fill keyboard shortcut** — new `quick_fill` command (`Alt+Shift+F`) fills the active page with the active persona without opening the popup; the background worker scans the tab, auto-maps recognizable fields (never `unknown`/`neverFill`) and dispatches the fill.
+
+### Changed
+
+- **`README.md` is now English** (the GitHub landing page for the global community); the Persian version moved to `README.fa.md` and `README.en.md` was removed. Both files carry language-switch links at the top. `docs/contributing.md` is now a redirect stub pointing to the root `CONTRIBUTING.md` (single source of truth).
+- **package.json metadata** — `author` field added (`SamRonin (https://github.com/SamRonin)`); `homepage` and `bugs` verified to point at the GitHub repository.
+- **UI typography** — locally bundled `Inter` (Latin) and `Vazirmatn` (Persian/RTL) fonts via `@fontsource` packages; no remote font requests, CSP-friendly. RTL pages lead with Vazirmatn, LTR with Inter; explicit `.pp-ltr` / `.pp-rtl` direction/alignment helper classes and font inheritance for form fields.
+- **`all_frames: true`** — the content script now runs in subframes too. Message listeners stay per-frame, the per-frame load guard prevents duplicate listeners, and only the top frame reports the badge, so multi-frame pages cause no message interference or badge spam.
+- **Shadow DOM traversal hardened** — recursive open-shadow-root collection now documented and extended: `aria-labelledby` resolves within the element's own tree (document or shadow root) and the owning `<form>` is found across shadow boundaries via the host chain.
+- **Framework-safe event dispatch** — after a native-prototype value change, `input` and `change` are dispatched synchronously and a `blur` (+ bubbling `focusout`) is dispatched deferred via `queueMicrotask`, so React, Vue and Formik validation cycles settle without state races.
+
+### Fixed
+
+- Persian (and other Arabic-script) labels were silently dropped by the tokenizer (`[^a-z0-9]` split) and never matched — they now classify correctly.
 
 ## [0.3.0] - 2026-10-08
 
