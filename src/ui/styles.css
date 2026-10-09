@@ -1,3 +1,11 @@
+/* Locally bundled fonts — no remote requests, CSP-friendly.
+   Inter covers Latin text; Vazirmatn covers Persian/RTL. */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/vazirmatn/arabic-400.css';
+@import '@fontsource/vazirmatn/arabic-500.css';
+@import '@fontsource/vazirmatn/arabic-600.css';
 @import 'tailwindcss';
 
 html,
@@ -7,15 +15,45 @@ body {
 }
 
 body {
+  /* Latin (LTR) stack: modern, highly readable sans-serif. */
   font-family:
-    ui-sans-serif,
+    'Inter',
     system-ui,
     -apple-system,
-    'Segoe UI',
-    Roboto,
     sans-serif;
   background-color: #09090b;
   color: #f4f4f5;
+}
+
+/* Persian UI renders right-to-left; Vazirmatn leads with Inter fallback
+   for Latin fragments (digits, technical tokens like "de-DE"). */
+html[dir='rtl'] body {
+  font-family:
+    'Vazirmatn',
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+/* Form fields must follow the surrounding UI font and direction. */
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+/* Explicit direction/alignment helpers for per-language text and fields.
+   Use .pp-ltr / .pp-rtl to pin a subtree that differs from the page direction. */
+.pp-ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+.pp-rtl {
+  direction: rtl;
+  text-align: right;
 }
 
 /* Popup width */
