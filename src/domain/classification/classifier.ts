@@ -41,6 +41,9 @@ const CONFLICT_MARGIN = 0.1;
  * dotted variants all collapse to the same tokens, digits are split
  * from letters ("addressLine1" -> [address, line, 1]). German umlauts
  * are transliterated first so "straße" and "strasse" match equally.
+ * Persian (and Arabic-script) text is preserved: ZWNJ acts as a
+ * separator, Arabic Yeh/Kaf variants fold to the Persian forms and
+ * Persian digits normalize to their Latin counterparts.
  */
 export function tokenize(raw: string): string[] {
   return raw
@@ -48,11 +51,17 @@ export function tokenize(raw: string): string[] {
     .replace(/ä/g, 'ae')
     .replace(/ö/g, 'oe')
     .replace(/ü/g, 'ue')
+    .replace(/ي/g, 'ی') // Arabic yeh -> Persian yeh
+    .replace(/ك/g, 'ک') // Arabic kaf -> Persian keheh
+    .replace(/\u200C/g, ' ') // ZWNJ (نیم‌فاصله) -> separator
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06f0)) // ۰-۹ -> 0-9
+    .replace(/([a-z0-9])([\u0600-\u06FF])/g, '$1 $2') // Latin/Arabic-script boundary
+    .replace(/([\u0600-\u06FF])([a-z0-9])/g, '$1 $2')
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/([A-Za-z])(\d)/g, '$1 $2')
     .replace(/(\d)([A-Za-z])/g, '$1 $2')
     .toLowerCase()
-    .split(/[^a-z0-9]+/)
+    .split(/[^a-z0-9\u0600-\u06FF]+/)
     .filter(Boolean);
 }
 

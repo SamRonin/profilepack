@@ -36,3 +36,43 @@ export function matchSelectOption(
 
   return null;
 }
+
+/** A select-like candidate without a native <option> element. */
+export interface OptionCandidate {
+  /** Machine value (e.g. option value / data-value). May be empty. */
+  value?: string;
+  /** Visible text of the option. */
+  text: string;
+}
+
+/**
+ * Generic alias matcher for non-<select> option lists (ARIA combobox
+ * `[role="option"]` elements). Uses the same normalization and
+ * two-pass strategy as `matchSelectOption`: exact value/text first,
+ * then punctuation-insensitive.
+ */
+export function matchOptionCandidates<T extends OptionCandidate>(
+  candidates: T[],
+  aliases: string[],
+): T | null {
+  const aliasSet = new Set(aliases.map(normalizeOptionText).filter(Boolean));
+  if (aliasSet.size === 0 || candidates.length === 0) return null;
+  const aliasCompact = new Set(
+    [...aliasSet].map((a) => a.replace(/[^a-z0-9]/g, '')).filter(Boolean),
+  );
+
+  for (const candidate of candidates) {
+    const value = normalizeOptionText(candidate.value ?? '');
+    const text = normalizeOptionText(candidate.text);
+    if (aliasSet.has(value) || aliasSet.has(text)) return candidate;
+  }
+
+  for (const candidate of candidates) {
+    const value = normalizeOptionText(candidate.value ?? '').replace(/[^a-z0-9]/g, '');
+    const text = normalizeOptionText(candidate.text).replace(/[^a-z0-9]/g, '');
+    if (value && aliasCompact.has(value)) return candidate;
+    if (text && aliasCompact.has(text)) return candidate;
+  }
+
+  return null;
+}

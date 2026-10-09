@@ -4,16 +4,18 @@ export type DictField = ProfileField | 'neverFill';
 
 export interface DictEntry {
   field: DictField;
-  lang: 'en' | 'de' | 'any';
+  lang: 'en' | 'de' | 'fa' | 'any';
   terms: string[];
 }
 
 /**
- * Multi-language field dictionary (v0.1: English + German).
+ * Multi-language field dictionary (English + German + Persian).
  *
  * Matching is token-based, so separators (`first_name`, `firstName`,
- * `first-name`) all resolve to the same term. Add new languages by
- * appending entries — the classifier treats them uniformly.
+ * `first-name`) all resolve to the same term. Persian terms match
+ * ZWNJ (نیم‌فاصله) and Arabic/Persian letter variants via tokenizer
+ * normalization. Add new languages by appending entries — the
+ * classifier treats them uniformly.
  */
 export const DICTIONARY: DictEntry[] = [
   // ---- never fill (sensitive / must not be automated) ----
@@ -97,6 +99,19 @@ export const DICTIONARY: DictEntry[] = [
       'agb',
       'widerruf',
       'newsletter abonnieren',
+      // Persian (fa)
+      'رمز عبور',
+      'تکرار رمز عبور',
+      'تأیید رمز عبور',
+      'گذرواژه',
+      'کد ملی',
+      'کدملی',
+      'شماره ملی',
+      'شماره کارت',
+      'کد امنیتی',
+      'کد امنیتی کارت',
+      'من ربات نیستم',
+      'کپچا',
     ],
   },
   // ---- identity ----
@@ -111,6 +126,9 @@ export const DICTIONARY: DictEntry[] = [
       'christian name',
       'vorname',
       'rufname',
+      // Persian (fa)
+      'نام',
+      'نام کوچک',
     ],
   },
   {
@@ -128,7 +146,18 @@ export const DICTIONARY: DictEntry[] = [
   {
     field: 'lastName',
     lang: 'any',
-    terms: ['last name', 'surname', 'family name', 'lname', 'nachname', 'familienname', 'zuname'],
+    terms: [
+      'last name',
+      'surname',
+      'family name',
+      'lname',
+      'nachname',
+      'familienname',
+      'zuname',
+      // Persian (fa)
+      'نام خانوادگی',
+      'نام فامیلی',
+    ],
   },
   {
     field: 'fullName',
@@ -142,6 +171,9 @@ export const DICTIONARY: DictEntry[] = [
       'name',
       'vollständiger name',
       'vollstaendiger name',
+      // Persian (fa)
+      'نام و نام خانوادگی',
+      'نام کامل',
     ],
   },
   {
@@ -159,6 +191,9 @@ export const DICTIONARY: DictEntry[] = [
       'nutzername',
       'benutzer',
       'kennung',
+      // Persian (fa)
+      'نام کاربری',
+      'شناسه کاربری',
     ],
   },
   {
@@ -174,6 +209,9 @@ export const DICTIONARY: DictEntry[] = [
       'born on',
       'geburtsdatum',
       'geboren am',
+      // Persian (fa)
+      'تاریخ تولد',
+      'تاریخ زادروز',
     ],
   },
   // ---- contact ----
@@ -197,6 +235,12 @@ export const DICTIONARY: DictEntry[] = [
       'mailadresse',
       'epost',
       'elektronische post',
+      // Persian (fa)
+      'ایمیل',
+      'آدرس ایمیل',
+      'نشانی ایمیل',
+      'رایانامه',
+      'پست الکترونیک',
     ],
   },
   {
@@ -221,13 +265,32 @@ export const DICTIONARY: DictEntry[] = [
       'mobil',
       'handy',
       'durchwahl',
+      // Persian (fa)
+      'شماره تلفن',
+      'تلفن',
+      'تلفن ثابت',
+      'شماره موبایل',
+      'موبایل',
+      'شماره همراه',
+      'همراه',
+      'تلفن همراه',
+      'شماره تماس',
     ],
   },
   // ---- address ----
   {
     field: 'country',
     lang: 'any',
-    terms: ['country', 'country name', 'select country', 'your country', 'land'],
+    terms: [
+      'country',
+      'country name',
+      'select country',
+      'your country',
+      'land',
+      // Persian (fa)
+      'کشور',
+      'انتخاب کشور',
+    ],
   },
   {
     field: 'state',
@@ -241,17 +304,39 @@ export const DICTIONARY: DictEntry[] = [
       'bundesstaat',
       'provinz',
       'kanton',
+      // Persian (fa)
+      'استان',
+      'شهرستان',
     ],
   },
   {
     field: 'city',
     lang: 'any',
-    terms: ['city', 'town', 'locality', 'city name', 'stadt', 'ort', 'wohnort'],
+    terms: [
+      'city',
+      'town',
+      'locality',
+      'city name',
+      'stadt',
+      'ort',
+      'wohnort',
+      // Persian (fa)
+      'شهر',
+      'نام شهر',
+    ],
   },
   {
     field: 'street',
     lang: 'any',
-    terms: ['street', 'street name', 'straße', 'strasse', 'str'],
+    terms: [
+      'street',
+      'street name',
+      'straße',
+      'strasse',
+      'str',
+      // Persian (fa)
+      'خیابان',
+    ],
   },
   {
     field: 'addressLine1',
@@ -272,6 +357,12 @@ export const DICTIONARY: DictEntry[] = [
       'strasse hausnummer',
       'hausanschrift',
       'zustelladresse',
+      // Persian (fa)
+      'نشانی',
+      'آدرس',
+      'نشانی پستی',
+      'آدرس پستی',
+      'نشانی منزل',
     ],
   },
   {
@@ -304,6 +395,9 @@ export const DICTIONARY: DictEntry[] = [
       'pin',
       'postleitzahl',
       'plz',
+      // Persian (fa)
+      'کد پستی',
+      'کدپستی',
     ],
   },
   // ---- business ----
@@ -327,6 +421,10 @@ export const DICTIONARY: DictEntry[] = [
       'unternehmensname',
       'arbeitgeber',
       'betrieb',
+      // Persian (fa)
+      'شرکت',
+      'نام شرکت',
+      'سازمان',
     ],
   },
   {
@@ -342,6 +440,10 @@ export const DICTIONARY: DictEntry[] = [
       'beruf',
       'berufsbezeichnung',
       'funktion',
+      // Persian (fa)
+      'سمت',
+      'عنوان شغلی',
+      'شغل',
     ],
   },
   {
@@ -392,6 +494,10 @@ export const DICTIONARY: DictEntry[] = [
       'webseite',
       'internetseite',
       'internetadresse',
+      // Persian (fa)
+      'وب‌سایت',
+      'وبسایت',
+      'سایت',
     ],
   },
   {
@@ -415,6 +521,10 @@ export const DICTIONARY: DictEntry[] = [
       'nachricht',
       'mitteilung',
       'hinweis',
+      // Persian (fa)
+      'توضیحات',
+      'یادداشت',
+      'پیام',
     ],
   },
 ];
