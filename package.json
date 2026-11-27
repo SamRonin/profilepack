@@ -54,7 +54,7 @@
     "@tailwindcss/vite": "^4.3.5",
     "@types/chrome": "^0.3.5",
     "@types/jsdom": "^30.0.0",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.6",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.4.1",
